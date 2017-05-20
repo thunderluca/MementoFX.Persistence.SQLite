@@ -130,5 +130,34 @@ namespace Memento.Persistence.SQLite.Tests
             Assert.Contains(nestedClassEvent.Second.Strings.First(), nestedClassEvents.First().Second.Strings);
             Assert.Contains(nestedClassEvent.Second.Strings.Last(), nestedClassEvents.First().Second.Strings);
         }
+
+        [Test]
+        public void RetrieveEvents_Should_Allow_Retrieval()
+        {
+            var @event = new ComplexCollectionEvent(Guid.NewGuid(), new[]
+            {
+                new ComplexCollectionEvent.Component("Hi", 51)
+            });
+            var eventToIgnore = new ComplexCollectionEvent(Guid.NewGuid(), new[]
+            {
+                new ComplexCollectionEvent.Component("Torino", 15)
+            });
+            EventStore.Save(@event);
+            EventStore.Save(eventToIgnore);
+
+            var eventDescriptors = new[]
+            {
+                new EventMapping { AggregateIdPropertyName = nameof(ComplexCollectionEvent.SecondId), EventType = typeof(ComplexCollectionEvent) }
+            };
+
+            var events = EventStore.RetrieveEvents(@event.SecondId, DateTime.Now, eventDescriptors, timelineId: null)
+                .Cast<ComplexCollectionEvent>();
+            Assert.AreEqual(events.Count(), 1);
+            Assert.AreEqual(events.First().Id, @event.Id);
+            Assert.AreEqual(events.First().SecondId, @event.SecondId);
+            Assert.AreEqual(events.First().TimeStamp.ToLocalTime(), @event.TimeStamp.ToLocalTime());
+            Assert.AreEqual(events.First().Components.First().Title, @event.Components.First().Title);
+            Assert.AreEqual(events.First().Components.First().Number, @event.Components.First().Number);
+        }
     }
 }

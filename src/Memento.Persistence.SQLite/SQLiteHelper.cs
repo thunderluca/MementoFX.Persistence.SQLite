@@ -73,7 +73,7 @@ namespace Memento.Persistence.SQLite
             var exisistingTableInfo = connection.GetTableInfo(tableType.Name);
             if (exisistingTableInfo == null || exisistingTableInfo.Count == 0)
             {
-                connection.CreateTable(tableType, CreateFlags.ImplicitPK);
+                connection.CreateTable(tableType, CreateFlags.ImplicitPK | CreateFlags.ImplicitIndex);
                 return;
             }
             connection.MigrateTable(tableType);
