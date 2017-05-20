@@ -22,7 +22,7 @@ namespace Memento.Persistence.SQLite.Tests
     public class SQLiteEventStoreFixture
     {
         private IEventStore EventStore = null;
-        private string databasePath = Path.GetTempFileName();
+        private string databasePath = Path.Combine(Path.GetTempPath(), "local.db");
 
         [SetUp]
         public void SetUp()
@@ -68,10 +68,17 @@ namespace Memento.Persistence.SQLite.Tests
         [Test]
         public void Save_Should_Allow_Retrieval()
         {
-            var @event = new PlainEvent("Hello Memento", DateTime.UtcNow, double.MaxValue);
+            var @event = new PlainEvent(Guid.NewGuid(), "Hello Memento", DateTime.UtcNow, double.MaxValue);
+            var eventToIgnore = new PlainEvent(Guid.NewGuid(), "Hello Mastreeno", DateTime.UtcNow, 0.0D);
             EventStore.Save(@event);
+            EventStore.Save(eventToIgnore);
 
-            var events = EventStore.Find<PlainEvent>(pe => pe.Id == @event.Id);
+            var eventDescriptors = new List<EventMapping>
+            {
+                new EventMapping { AggregateIdPropertyName = nameof(PlainEvent.AggregateId), EventType = typeof(PlainEvent) }
+            };
+
+            var events = EventStore.Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId);
             Assert.AreEqual(events.Count(), 1);
             Assert.AreEqual(events.First().Id, @event.Id);
             Assert.AreEqual(events.First().Title, @event.Title);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SQLite.Net.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,11 +9,17 @@ namespace Memento.Persistence.SQLite.Tests.Events
 {
     public class ComplexEvent : DomainEvent
     {
+        public ComplexEvent() { }
+
         public ComplexEvent(Guid secondId, Component[] components)
         {
+            this.Id = Guid.NewGuid();
             this.SecondId = secondId;
             this.Components = components;
         }
+
+        [PrimaryKey]
+        public Guid Id { get; internal set; }
 
         public Guid SecondId { get; private set; }
 
@@ -20,6 +27,8 @@ namespace Memento.Persistence.SQLite.Tests.Events
 
         public class Component
         {
+            public Component() { }
+
             public Component(string title, int number)
             {
                 this.Title = title;

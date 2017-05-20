@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Memento.Messaging;
-using System.Reflection;
 using SQLite.Net;
-using SQLite.Net.Interop;
+#if X86 || X64
+using SQLite.Net.Platform.Win32;
+#else
 using SQLite.Net.Platform.Generic;
+#endif
 
 namespace Memento.Persistence.SQLite
 {
@@ -20,8 +22,12 @@ namespace Memento.Persistence.SQLite
             if (SQLiteDatabase == null)
             {
                 var connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["EventStore"].ConnectionString;
-
-                SQLiteDatabase = new SQLiteConnection(new SQLitePlatformGeneric(), connectionString);
+#if X86 || X64
+                var sqlitePlatform = new SQLitePlatformWin32();
+#else
+                var sqlitePlatform = new SQLitePlatformGeneric();
+#endif
+                SQLiteDatabase = new SQLiteConnection(sqlitePlatform, connectionString);
             }
         }
 
@@ -35,7 +41,7 @@ namespace Memento.Persistence.SQLite
 
         public override IEnumerable<T> Find<T>(Func<T, bool> filter)
         {
-            SQLiteDatabase.CreateTable<T>(CreateFlags.ImplicitPK);
+            SQLiteDatabase.CreateEventTable(typeof(T));
 
             return SQLiteDatabase.Table<T>().Where(filter);
         }
@@ -43,9 +49,9 @@ namespace Memento.Persistence.SQLite
         private static string GetCommandTextSuffix(Guid? timelineId)
         {
             if (!timelineId.HasValue)
-                return $" AND {nameof(DomainEvent.TimelineId)} is null";
+                return $" AND {nameof(DomainEvent.TimelineId)} IS NULL";
             else
-                return $" AND {nameof(DomainEvent.TimelineId)} is null OR {nameof(DomainEvent.TimelineId)} = $timelineId";
+                return $" AND {nameof(DomainEvent.TimelineId)} IS NULL OR {nameof(DomainEvent.TimelineId)} = '{timelineId.Value}'";
         }
 
         public override IEnumerable<DomainEvent> RetrieveEvents(Guid aggregateId, DateTime pointInTime, IEnumerable<EventMapping> eventDescriptors, Guid? timelineId)
@@ -57,26 +63,25 @@ namespace Memento.Persistence.SQLite
             var descriptorsGrouped = eventDescriptors
                 .GroupBy(k => k.EventType);
 
-            var suffixCommandText = GetCommandTextSuffix(timelineId);
+            var querySuffix = GetCommandTextSuffix(timelineId);
 
             foreach (var descriptorsGroup in descriptorsGrouped)
             {
                 var eventType = descriptorsGroup.Key;
                 var tableName = eventType.Name;
 
+                var mapping = SQLiteDatabase.GetMapping(eventType);
+
                 foreach (var eventDescriptor in descriptorsGroup)
                 {
-                    var commandText = $"SELECT * FROM $tableName WHERE $aggregateIdPropertyName = $aggregateId AND strftime('%s', {nameof(DomainEvent.TimeStamp)}) BETWEEN strftime('%s', $firstDayYear) AND strftime('%s', $pointInTime)";
-                    commandText += suffixCommandText;
+                    var query = $"SELECT * FROM {tableName} WHERE "
+                        + $"{eventDescriptor.AggregateIdPropertyName} = ? AND " 
+                        + $"{nameof(DomainEvent.TimeStamp)} BETWEEN '{firstDayYear.Ticks}' AND '{pointInTime.Ticks}'";
+                    
+                    query += querySuffix;
 
-                    var command = SQLiteDatabase.CreateCommand(commandText);
-                    command.Bind("$tableName", tableName);
-                    command.Bind("$aggregateIdPropertyName", eventDescriptor.AggregateIdPropertyName);
-                    command.Bind("$aggregateId", aggregateId);
-                    command.Bind("$firstDayYear", firstDayYear.ToString("yyyy-MM-dd"));
-                    command.Bind("$pointInTime", firstDayYear.ToString("yyyy-MM-dd"));
+                    var collection = SQLiteDatabase.Query(mapping, query, aggregateId);
 
-                    var collection = command.ExecuteQuery<object>(SQLiteDatabase.GetMapping(eventType));
                     foreach (var evt in collection)
                         events.Add((DomainEvent)evt);
                 }
@@ -89,41 +94,28 @@ namespace Memento.Persistence.SQLite
         {
             var eventType = @event.GetType();
 
-            SQLiteDatabase.CreateTable(eventType);
+            SQLiteDatabase.CreateEventTable(eventType);
 
-            var propertiesNames = eventType
-                .GetProperties(BindingFlags.Public)
-                .Select(pi => pi.Name)
-                .ToArray();
+            SQLiteDatabase.Insert(@event, eventType);
 
-            var propertiesValues = propertiesNames
-                .Select(pn => eventType.GetProperty(pn).GetValue(@event, null))
-                .ToArray();
+            //var propertiesNames = eventType
+            //    .GetProperties()
+            //    .Select(pi => pi.Name)
+            //    .ToArray();
 
-            var commandText = "INSERT INTO $tableName (";
-            for (var i = 0; i < propertiesNames.Length; i++)
-            {
-                commandText += $"$c{i},";
-            }
-            commandText += ") VALUES (";
-            for (var i = 0; i < propertiesValues.Length; i++)
-            {
-                commandText += $"$v{i},";
-            }
-            commandText += ")";
+            //var propertiesValues = propertiesNames
+            //    .Select(pn => eventType.GetProperty(pn).GetValue(@event, null))
+            //    .ToArray();
 
-            var command = SQLiteDatabase.CreateCommand(commandText);
-            command.Bind("$tableName", eventType.Name);
-            for (var i = 0; i < propertiesNames.Length; i++)
-            {
-                command.Bind($"$c{i}", propertiesNames[i]);
-            }
-            for (var i = 0; i < propertiesValues.Length; i++)
-            {
-                command.Bind($"$v{i}", propertiesValues[i]);
-            }
+            //var tableName = eventType.Name;
+            //var commandText = $"INSERT INTO {tableName} (";
+            //commandText += string.Join(",", propertiesNames);
+            //commandText += ") VALUES (";
+            //commandText += string.Join(",", propertiesValues.Select(_ => "?"));
+            //commandText += ")";
 
-            command.ExecuteNonQuery();
+            //var command = SQLiteDatabase.CreateCommand(commandText, propertiesValues);
+            //command.ExecuteNonQuery();
         }
     }
 }
