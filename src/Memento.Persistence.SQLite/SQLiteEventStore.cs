@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Memento.Messaging;
 using SQLite.Net;
+using SQLite.Net.Interop;
 #if X86 || X64
 using SQLite.Net.Platform.Win32;
 #else
@@ -41,7 +42,7 @@ namespace Memento.Persistence.SQLite
 
         public override IEnumerable<T> Find<T>(Func<T, bool> filter)
         {
-            SQLiteDatabase.CreateEventTable(typeof(T));
+            SQLiteDatabase.CreateTable(typeof(T), CreateFlags.ImplicitPK);
 
             return SQLiteDatabase.Table<T>().Where(filter);
         }
@@ -94,7 +95,7 @@ namespace Memento.Persistence.SQLite
         {
             var eventType = @event.GetType();
 
-            SQLiteDatabase.CreateEventTable(eventType);
+            SQLiteDatabase.CreateTable(eventType, CreateFlags.ImplicitPK);
 
             SQLiteDatabase.Insert(@event, eventType);
 

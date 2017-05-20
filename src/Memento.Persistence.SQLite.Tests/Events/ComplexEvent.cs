@@ -1,5 +1,4 @@
-﻿using SQLite.Net.Attributes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,8 +16,7 @@ namespace Memento.Persistence.SQLite.Tests.Events
             this.SecondId = secondId;
             this.Components = components;
         }
-
-        [PrimaryKey]
+        
         public Guid Id { get; internal set; }
 
         public Guid SecondId { get; private set; }

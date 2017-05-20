@@ -50,20 +50,5 @@ namespace Memento.Persistence.SQLite
 
             return new SQLiteConnection(platform, path, true, serializer);
         }
-
-        public static void CreateEventTable(this SQLiteConnection connection, Type type)
-        {
-            connection.CreateTable(type);
-
-            //var info = connection.GetTableInfo(type.Name);
-            //if (info.Any(c => c.Name == nameof(DomainEvent.Id))) return;
-
-            //var commandText = $"ALTER TABLE {type.Name} ADD {nameof(DomainEvent.Id)} varchar(36) NOT NULL DEFAULT '{Guid.Empty.ToString()}'";
-
-            //var command = connection.CreateCommand(commandText);
-            //command.ExecuteNonQuery();
-
-            //connection.CreateIndex(type.Name, nameof(DomainEvent.Id), unique: true);
-        }
     }
 }

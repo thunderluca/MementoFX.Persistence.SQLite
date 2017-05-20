@@ -1,5 +1,4 @@
-﻿using SQLite.Net.Attributes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,7 +19,6 @@ namespace Memento.Persistence.SQLite.Tests.Events
             this.Number = number;
         }
 
-        [PrimaryKey]
         public Guid Id { get; internal set; }
 
         public Guid AggregateId { get; private set; }
