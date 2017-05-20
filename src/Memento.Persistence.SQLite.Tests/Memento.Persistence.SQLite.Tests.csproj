@@ -144,7 +144,8 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="Events\ComplexEvent.cs" />
+    <Compile Include="Events\ComplexClassEvent.cs" />
+    <Compile Include="Events\ComplexCollectionEvent.cs" />
     <Compile Include="Events\PlainEvent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SQLiteEventStoreFixture.cs" />

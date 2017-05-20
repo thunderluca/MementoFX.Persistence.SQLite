@@ -57,5 +57,26 @@ namespace Memento.Persistence.SQLite
                 storeDateTimeAsTicks: true, 
                 serializer: serializer);
         }
+
+        public static void CreateOrMigrateTable<T>(this SQLiteConnection connection) where T : DomainEvent
+        {
+            CreateOrMigrateTable(connection, typeof(T));
+        }
+
+        public static void CreateOrMigrateTable(this SQLiteConnection connection, Type tableType)
+        {
+            if (connection == null)
+            {
+                throw new ArgumentNullException(nameof(connection));
+            }
+
+            var exisistingTableInfo = connection.GetTableInfo(tableType.Name);
+            if (exisistingTableInfo == null || exisistingTableInfo.Count == 0)
+            {
+                connection.CreateTable(tableType, CreateFlags.ImplicitPK);
+                return;
+            }
+            connection.MigrateTable(tableType);
+        }
     }
 }

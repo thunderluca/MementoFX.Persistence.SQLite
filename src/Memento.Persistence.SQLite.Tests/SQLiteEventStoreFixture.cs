@@ -72,12 +72,7 @@ namespace Memento.Persistence.SQLite.Tests
             var eventToIgnore = new PlainEvent(Guid.NewGuid(), "Hello Mastreeno", DateTime.UtcNow, 0.0D);
             EventStore.Save(@event);
             EventStore.Save(eventToIgnore);
-
-            var eventDescriptors = new List<EventMapping>
-            {
-                new EventMapping { AggregateIdPropertyName = nameof(PlainEvent.AggregateId), EventType = typeof(PlainEvent) }
-            };
-
+            
             var events = EventStore.Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId);
             Assert.AreEqual(events.Count(), 1);
             Assert.AreEqual(events.First().Id, @event.Id);
@@ -90,11 +85,15 @@ namespace Memento.Persistence.SQLite.Tests
         [Test]
         public void Save_Should_Allow_Complex_Types()
         {
-            var @event = new ComplexEvent(Guid.NewGuid(), new[]
+            var @event = new ComplexCollectionEvent(Guid.NewGuid(), new[]
             {
-                new ComplexEvent.Component("Hi", 51)
+                new ComplexCollectionEvent.Component("Hi", 51)
             });
+            var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' ')));
             Executing.This(() => EventStore.Save(@event))
+                .Should()
+                .NotThrow();
+            Executing.This(() => EventStore.Save(nestedClassEvent))
                 .Should()
                 .NotThrow();
         }
@@ -102,28 +101,34 @@ namespace Memento.Persistence.SQLite.Tests
         [Test]
         public void Save_Should_Allow_Retrieval_Of_Complex_Types()
         {
-            var @event = new ComplexEvent(Guid.NewGuid(), new[]
+            var @event = new ComplexCollectionEvent(Guid.NewGuid(), new[]
             {
-                new ComplexEvent.Component("Hi", 51)
+                new ComplexCollectionEvent.Component("Hi", 51)
             });
-            var eventToIgnore = new ComplexEvent(Guid.NewGuid(), new[]
+            var eventToIgnore = new ComplexCollectionEvent(Guid.NewGuid(), new[]
             {
-                new ComplexEvent.Component("Torino", 15)
+                new ComplexCollectionEvent.Component("Torino", 15)
             });
+            var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' ')));
             EventStore.Save(@event);
             EventStore.Save(eventToIgnore);
+            EventStore.Save(nestedClassEvent);
 
-            var eventDescriptors = new List<EventMapping>
-            {
-                new EventMapping { AggregateIdPropertyName = nameof(PlainEvent.AggregateId), EventType = typeof(PlainEvent) }
-            };
-
-            var events = EventStore.Find<ComplexEvent>(pe => pe.SecondId == @event.SecondId);
+            var events = EventStore.Find<ComplexCollectionEvent>(cce => cce.SecondId == @event.SecondId);
             Assert.AreEqual(events.Count(), 1);
             Assert.AreEqual(events.First().Id, @event.Id);
+            Assert.AreEqual(events.First().SecondId, @event.SecondId);
             Assert.AreEqual(events.First().TimeStamp.ToLocalTime(), @event.TimeStamp.ToLocalTime());
             Assert.AreEqual(events.First().Components.First().Title, @event.Components.First().Title);
             Assert.AreEqual(events.First().Components.First().Number, @event.Components.First().Number);
+
+            var nestedClassEvents = EventStore.Find<ComplexClassEvent>(cce => cce.AggId == nestedClassEvent.AggId);
+            Assert.AreEqual(nestedClassEvents.First().Id, nestedClassEvent.Id);
+            Assert.AreEqual(nestedClassEvents.First().TimeStamp.ToLocalTime(), nestedClassEvent.TimeStamp.ToLocalTime());
+            Assert.AreEqual(nestedClassEvents.First().AggId, nestedClassEvent.AggId);
+            Assert.AreNotEqual(nestedClassEvents.First().Second, null);
+            Assert.Contains(nestedClassEvent.Second.Strings.First(), nestedClassEvents.First().Second.Strings);
+            Assert.Contains(nestedClassEvent.Second.Strings.Last(), nestedClassEvents.First().Second.Strings);
         }
     }
 }

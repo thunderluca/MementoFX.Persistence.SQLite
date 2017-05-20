@@ -43,7 +43,7 @@ namespace Memento.Persistence.SQLite
 
         public override IEnumerable<T> Find<T>(Func<T, bool> filter)
         {
-            SQLiteDatabase.CreateTable(typeof(T), CreateFlags.ImplicitPK);
+            SQLiteDatabase.CreateOrMigrateTable<T>();
 
             return SQLiteDatabase.Table<T>().Where(filter);
         }
@@ -96,7 +96,7 @@ namespace Memento.Persistence.SQLite
         {
             var eventType = @event.GetType();
 
-            SQLiteDatabase.CreateTable(eventType, CreateFlags.ImplicitPK);
+            SQLiteDatabase.CreateOrMigrateTable(eventType);
 
             SQLiteDatabase.Insert(@event, eventType);
 

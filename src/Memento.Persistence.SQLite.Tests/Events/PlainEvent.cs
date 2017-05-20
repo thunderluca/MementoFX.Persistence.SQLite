@@ -12,7 +12,7 @@ namespace Memento.Persistence.SQLite.Tests.Events
         {
         }
 
-        public PlainEvent(Guid aggregateId, string title, DateTime date, double number) : base()
+        public PlainEvent(Guid aggregateId, string title, DateTime date, double number)
         {
             this.Id = Guid.NewGuid();
             this.AggregateId = aggregateId;

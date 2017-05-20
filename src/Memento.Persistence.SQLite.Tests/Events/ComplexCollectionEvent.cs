@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace Memento.Persistence.SQLite.Tests.Events
 {
-    public class ComplexEvent : DomainEvent
+    public class ComplexCollectionEvent : DomainEvent
     {
-        public ComplexEvent()
+        public ComplexCollectionEvent()
         {
         }
 
-        public ComplexEvent(Guid secondId, Component[] components)
+        public ComplexCollectionEvent(Guid secondId, Component[] components)
         {
             this.Id = Guid.NewGuid();
             this.SecondId = secondId;
