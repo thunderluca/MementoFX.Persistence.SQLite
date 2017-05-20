@@ -99,25 +99,6 @@ namespace Memento.Persistence.SQLite
             SQLiteDatabase.CreateOrMigrateTable(eventType);
 
             SQLiteDatabase.Insert(@event, eventType);
-
-            //var propertiesNames = eventType
-            //    .GetProperties()
-            //    .Select(pi => pi.Name)
-            //    .ToArray();
-
-            //var propertiesValues = propertiesNames
-            //    .Select(pn => eventType.GetProperty(pn).GetValue(@event, null))
-            //    .ToArray();
-
-            //var tableName = eventType.Name;
-            //var commandText = $"INSERT INTO {tableName} (";
-            //commandText += string.Join(",", propertiesNames);
-            //commandText += ") VALUES (";
-            //commandText += string.Join(",", propertiesValues.Select(_ => "?"));
-            //commandText += ")";
-
-            //var command = SQLiteDatabase.CreateCommand(commandText, propertiesValues);
-            //command.ExecuteNonQuery();
         }
     }
 }
