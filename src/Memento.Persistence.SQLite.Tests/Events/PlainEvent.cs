@@ -8,7 +8,7 @@ namespace Memento.Persistence.SQLite.Tests.Events
 {
     public class PlainEvent : DomainEvent
     {
-        public PlainEvent()
+        public PlainEvent() //SQLite ContractResolver need it
         {
         }
 
@@ -21,7 +21,7 @@ namespace Memento.Persistence.SQLite.Tests.Events
             this.Number = number;
         }
 
-        public Guid Id { get; internal set; }
+        public Guid Id { get; internal set; } //SQLite cannot use DomainEvent.Id because of private setter
 
         public Guid AggregateId { get; private set; }
 
