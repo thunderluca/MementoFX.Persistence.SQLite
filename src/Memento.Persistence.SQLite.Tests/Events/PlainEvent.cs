@@ -8,7 +8,9 @@ namespace Memento.Persistence.SQLite.Tests.Events
 {
     public class PlainEvent : DomainEvent
     {
-        public PlainEvent() { }
+        public PlainEvent()
+        {
+        }
 
         public PlainEvent(Guid aggregateId, string title, DateTime date, double number) : base()
         {

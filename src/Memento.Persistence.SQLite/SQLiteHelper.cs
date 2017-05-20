@@ -12,43 +12,50 @@ namespace Memento.Persistence.SQLite
 {
     public static class SQLiteHelper
     {
-        public static SQLiteConnection CreateSQLiteConnection(ISQLitePlatform platform, string path)
+        private static Type[] SQLiteSuppoertedTypes =
         {
-            BlobSerializerDelegate.SerializeDelegate serializerDelegate = obj =>
-            {
-                return Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(obj));
-            };
+            typeof(int),
+            typeof(long),
+            typeof(bool),
+            typeof(Enum),
+            typeof(float),
+            typeof(double),
+            typeof(string),
+            typeof(DateTime),
+            typeof(DateTimeOffset),
+            typeof(byte[]),
+            typeof(Guid)
+        };
 
-            BlobSerializerDelegate.DeserializeDelegate deserializerDelegate = (data, type) =>
+        private static BlobSerializerDelegate.SerializeDelegate serializerDelegate = obj => 
+            Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(obj));
+
+        private static BlobSerializerDelegate.DeserializeDelegate deserializerDelegate = (data, type) =>
+        {
+            using (var stream = new MemoryStream(data))
             {
-                using (var stream = new MemoryStream(data))
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
                 {
-                    using (var reader = new StreamReader(stream, Encoding.UTF8))
-                    {
-                        return JsonSerializer.Create().Deserialize(reader, type);
-                    }
+                    return JsonSerializer.Create().Deserialize(reader, type);
                 }
-            };
-            
-            BlobSerializerDelegate.CanSerializeDelegate canDeserializeDelegate = (type) =>
-            {
-                return !(type == typeof(int))
-                    && !(type == typeof(long))
-                    && !(type == typeof(long))
-                    && !(type == typeof(bool))
-                    && !(type == typeof(Enum))
-                    && !(type == typeof(float))
-                    && !(type == typeof(double))
-                    && !(type == typeof(string))
-                    && !(type == typeof(DateTime))
-                    && !(type == typeof(DateTimeOffset))
-                    && !(type == typeof(byte[]))
-                    && !(type == typeof(Guid));
-            };
+            }
+        };
 
-            var serializer = new BlobSerializerDelegate(serializerDelegate, deserializerDelegate, canDeserializeDelegate);
+        private static BlobSerializerDelegate.CanSerializeDelegate canDeserializeDelegate = type => 
+            SQLiteSuppoertedTypes.All(t => t != type);
 
-            return new SQLiteConnection(platform, path, true, serializer);
+        public static SQLiteConnection CreateSQLiteConnection(ISQLitePlatform platform, string databasePath)
+        {
+            var serializer = new BlobSerializerDelegate(
+                serializeDelegate: serializerDelegate, 
+                deserializeDelegate: deserializerDelegate, 
+                canDeserializeDelegate: canDeserializeDelegate);
+
+            return new SQLiteConnection(
+                sqlitePlatform: platform,
+                databasePath: databasePath, 
+                storeDateTimeAsTicks: true, 
+                serializer: serializer);
         }
     }
 }

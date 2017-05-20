@@ -8,7 +8,9 @@ namespace Memento.Persistence.SQLite.Tests.Events
 {
     public class ComplexEvent : DomainEvent
     {
-        public ComplexEvent() { }
+        public ComplexEvent()
+        {
+        }
 
         public ComplexEvent(Guid secondId, Component[] components)
         {
@@ -25,8 +27,6 @@ namespace Memento.Persistence.SQLite.Tests.Events
 
         public class Component
         {
-            public Component() { }
-
             public Component(string title, int number)
             {
                 this.Title = title;

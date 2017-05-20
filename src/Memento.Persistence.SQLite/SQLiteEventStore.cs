@@ -11,6 +11,7 @@ using SQLite.Net.Platform.Win32;
 #else
 using SQLite.Net.Platform.Generic;
 #endif
+using static Memento.Persistence.SQLite.SQLiteHelper;
 
 namespace Memento.Persistence.SQLite
 {
@@ -28,7 +29,7 @@ namespace Memento.Persistence.SQLite
 #else
                 var sqlitePlatform = new SQLitePlatformGeneric();
 #endif
-                SQLiteDatabase = new SQLiteConnection(sqlitePlatform, connectionString);
+                SQLiteDatabase = CreateSQLiteConnection(sqlitePlatform, connectionString);
             }
         }
 
