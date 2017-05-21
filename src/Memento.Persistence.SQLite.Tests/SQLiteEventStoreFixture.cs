@@ -134,30 +134,35 @@ namespace Memento.Persistence.SQLite.Tests
         [Test]
         public void RetrieveEvents_Should_Allow_Retrieval()
         {
-            var @event = new ComplexCollectionEvent(Guid.NewGuid(), new[]
+            var firstEvent = new ComplexCollectionEvent(Guid.NewGuid(), new[]
             {
                 new ComplexCollectionEvent.Component("Hi", 51)
             });
-            var eventToIgnore = new ComplexCollectionEvent(Guid.NewGuid(), new[]
+            var secondEvent = new ComplexCollectionEvent(Guid.NewGuid(), new[]
             {
                 new ComplexCollectionEvent.Component("Torino", 15)
             });
-            EventStore.Save(@event);
-            EventStore.Save(eventToIgnore);
+            EventStore.Save(firstEvent);
+            EventStore.Save(secondEvent);
 
             var eventDescriptors = new[]
             {
                 new EventMapping { AggregateIdPropertyName = nameof(ComplexCollectionEvent.SecondId), EventType = typeof(ComplexCollectionEvent) }
             };
 
-            var events = EventStore.RetrieveEvents(@event.SecondId, DateTime.Now, eventDescriptors, timelineId: null)
+            var events = EventStore.RetrieveEvents(firstEvent.SecondId, DateTime.Now.AddDays(-1), eventDescriptors, timelineId: null)
                 .Cast<ComplexCollectionEvent>();
-            Assert.AreEqual(events.Count(), 1);
-            Assert.AreEqual(events.First().Id, @event.Id);
-            Assert.AreEqual(events.First().SecondId, @event.SecondId);
-            Assert.AreEqual(events.First().TimeStamp.ToLocalTime(), @event.TimeStamp.ToLocalTime());
-            Assert.AreEqual(events.First().Components.First().Title, @event.Components.First().Title);
-            Assert.AreEqual(events.First().Components.First().Number, @event.Components.First().Number);
+            Assert.AreEqual(events.Count(), 0);
+        }
+
+        [Test]
+        public void Find_Allow_Filter_By_Complex_Property()
+        {
+            var @event = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass(new string[0]));
+            EventStore.Save(@event);
+
+            var events = EventStore.Find<ComplexClassEvent>(e => e.Second != null && e.Second.Strings.Length == 0);
+            Assert.IsNotEmpty(events.ToArray());
         }
     }
 }
