@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Memento.Messaging;
 using SQLite.Net;
-using SQLite.Net.Interop;
 #if X86 || X64
 using SQLite.Net.Platform.Win32;
 #else
@@ -48,25 +47,13 @@ namespace Memento.Persistence.SQLite
             return SQLiteDatabase.Table<T>().Where(filter);
         }
 
-        private static string GetCommandTextSuffix(bool timelineIdHasValue)
-        {
-            if (!timelineIdHasValue)
-                return $" AND {nameof(DomainEvent.TimelineId)} IS NULL";
-            else
-                return $" AND {nameof(DomainEvent.TimelineId)} IS NULL OR {nameof(DomainEvent.TimelineId)} = ?";
-        }
-
         public override IEnumerable<DomainEvent> RetrieveEvents(Guid aggregateId, DateTime pointInTime, IEnumerable<EventMapping> eventDescriptors, Guid? timelineId)
         {
-            var firstDayYear = new DateTime(pointInTime.Year, 1, 1);
-
             var events = new List<DomainEvent>();
 
             var descriptorsGrouped = eventDescriptors
                 .GroupBy(k => k.EventType);
-
-            var querySuffix = GetCommandTextSuffix(timelineId.HasValue);
-
+            
             foreach (var descriptorsGroup in descriptorsGrouped)
             {
                 var eventType = descriptorsGroup.Key;
@@ -76,17 +63,9 @@ namespace Memento.Persistence.SQLite
 
                 foreach (var eventDescriptor in descriptorsGroup)
                 {
-                    var query = $"SELECT * FROM {tableName} WHERE "
-                        + $"{eventDescriptor.AggregateIdPropertyName} = ? AND "
-                        + $"{nameof(DomainEvent.TimeStamp)} BETWEEN {firstDayYear.Ticks} AND {pointInTime.Ticks}";
-
-                    query += querySuffix;
-
-                    var queryParams = timelineId.HasValue 
-                        ? new object[] { aggregateId, timelineId.Value }
-                        : new object[] { aggregateId };
-
-                    var collection = SQLiteDatabase.Query(mapping, query, queryParams);
+                    var collection = SQLiteDatabase.StoreDateTimeAsTicks 
+                        ? ExecuteQueryForDateTimeAsTicks(tableName, eventDescriptor.AggregateIdPropertyName, mapping, aggregateId, pointInTime, timelineId) 
+                        : ExecuteQueryForDateTimeAsDates(tableName, eventDescriptor.AggregateIdPropertyName, mapping, aggregateId, pointInTime, timelineId);
 
                     foreach (var evt in collection)
                         events.Add((DomainEvent)evt);
@@ -96,13 +75,59 @@ namespace Memento.Persistence.SQLite
             return events.OrderBy(e => e.TimeStamp);
         }
 
+        private List<object> ExecuteQueryForDateTimeAsTicks(
+            string tableName, 
+            string aggregateIdPropertyName,
+            TableMapping mapping,
+            Guid aggregateId,
+            DateTime pointInTime,
+            Guid? timelineId)
+        {
+            var query = $"SELECT * FROM {tableName} WHERE "
+                           + $"{aggregateIdPropertyName} = ? AND "
+                           + $"{nameof(DomainEvent.TimeStamp)} <= ?"
+                           + $" AND {nameof(DomainEvent.TimelineId)} IS NULL";
+
+            if (timelineId.HasValue)
+                query += $" OR {nameof(DomainEvent.TimelineId)} = ?";
+
+            var queryParams = timelineId.HasValue
+                ? new object[] { aggregateId, pointInTime.Ticks, timelineId.Value }
+                : new object[] { aggregateId, pointInTime.Ticks };
+
+            var collection = SQLiteDatabase.Query(mapping, query, queryParams);
+            return collection;
+        }
+
+        private List<object> ExecuteQueryForDateTimeAsDates(
+            string tableName,
+            string aggregateIdPropertyName,
+            TableMapping mapping,
+            Guid aggregateId,
+            DateTime pointInTime,
+            Guid? timelineId)
+        {
+            var query = $"SELECT * FROM {tableName} WHERE "
+                           + $"{aggregateIdPropertyName} = ? AND "
+                           + $"{nameof(DomainEvent.TimeStamp)} <= date('?')"
+                           + $" AND {nameof(DomainEvent.TimelineId)} IS NULL";
+
+            if (timelineId.HasValue)
+                query += $" OR {nameof(DomainEvent.TimelineId)} = ?";
+
+            var queryParams = timelineId.HasValue
+                ? new object[] { aggregateId, pointInTime.ToString("yyyy-MM-ss"), timelineId.Value }
+                : new object[] { aggregateId, pointInTime.ToString("yyyy-MM-ss") };
+
+            var collection = SQLiteDatabase.Query(mapping, query, queryParams);
+            return collection;
+        }
+
         protected override void _Save(DomainEvent @event)
         {
-            var eventType = @event.GetType();
+            SQLiteDatabase.CreateOrMigrateTable(@event.GetType());
 
-            SQLiteDatabase.CreateOrMigrateTable(eventType);
-
-            SQLiteDatabase.Insert(@event, eventType);
+            SQLiteDatabase.Insert(@event, @event.GetType());
         }
     }
 }

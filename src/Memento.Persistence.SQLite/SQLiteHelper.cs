@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Memento.Persistence.SQLite
 {
@@ -44,7 +43,7 @@ namespace Memento.Persistence.SQLite
         private static BlobSerializerDelegate.CanSerializeDelegate canDeserializeDelegate = type => 
             SQLiteSuppoertedTypes.All(t => t != type);
 
-        public static SQLiteConnection CreateSQLiteConnection(ISQLitePlatform platform, string databasePath)
+        public static SQLiteConnection CreateSQLiteConnection(ISQLitePlatform platform, string databasePath, bool storeDateTimeAsTicks = true)
         {
             var serializer = new BlobSerializerDelegate(
                 serializeDelegate: serializerDelegate, 
@@ -54,7 +53,7 @@ namespace Memento.Persistence.SQLite
             return new SQLiteConnection(
                 sqlitePlatform: platform,
                 databasePath: databasePath, 
-                storeDateTimeAsTicks: true, 
+                storeDateTimeAsTicks: storeDateTimeAsTicks, 
                 serializer: serializer);
         }
 
