@@ -22,7 +22,8 @@ namespace Memento.Persistence.SQLite.Tests
     public class SQLiteEventStoreFixture
     {
         private IEventStore EventStore = null;
-        private string databasePath = Path.Combine(Path.GetTempPath(), "local2.db");
+        private string databasePath = Path.Combine(Path.GetTempPath(), "local.db");
+        //private string databasePath = Path.Combine(Path.GetTempPath(), "local2.db");
 
         [SetUp]
         public void SetUp()
@@ -33,7 +34,8 @@ namespace Memento.Persistence.SQLite.Tests
 #else
             var sqlitePlatform = new SQLitePlatformGeneric(); 
 #endif
-            var sqliteConnection = CreateSQLiteConnection(sqlitePlatform, databasePath, storeDateTimeAsTicks: false);
+            var sqliteConnection = CreateSQLiteConnection(sqlitePlatform, databasePath, storeDateTimeAsTicks: true);
+            //var sqliteConnection = CreateSQLiteConnection(sqlitePlatform, databasePath, storeDateTimeAsTicks: false);
             EventStore = new SQLiteEventStore(sqliteConnection, bus);
         }
 
