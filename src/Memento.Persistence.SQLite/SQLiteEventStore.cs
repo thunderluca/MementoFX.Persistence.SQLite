@@ -63,9 +63,21 @@ namespace Memento.Persistence.SQLite
 
                 foreach (var eventDescriptor in descriptorsGroup)
                 {
-                    var collection = SQLiteDatabase.StoreDateTimeAsTicks 
-                        ? ExecuteQueryForDateTimeAsTicks(tableName, eventDescriptor.AggregateIdPropertyName, mapping, aggregateId, pointInTime, timelineId) 
-                        : ExecuteQueryForDateTimeAsDates(tableName, eventDescriptor.AggregateIdPropertyName, mapping, aggregateId, pointInTime, timelineId);
+                    var query = $"SELECT * FROM {tableName} WHERE "
+                        + $"{eventDescriptor.AggregateIdPropertyName} = ? AND "
+                        + $"{nameof(DomainEvent.TimeStamp)} <= {(SQLiteDatabase.StoreDateTimeAsTicks ? "date('?')" : "?")}"
+                        + $" AND {nameof(DomainEvent.TimelineId)} IS NULL";
+
+                    if (timelineId.HasValue)
+                        query += $" OR {nameof(DomainEvent.TimelineId)} = ?";
+
+                    var queryParams = GetQueryParametersCollection(
+                        storeDateTimeAsTicks: SQLiteDatabase.StoreDateTimeAsTicks, 
+                        aggregateId: aggregateId, 
+                        pointInTime: pointInTime,
+                        timelineId: timelineId);
+
+                    var collection = SQLiteDatabase.Query(mapping, query, queryParams);
 
                     foreach (var evt in collection)
                         events.Add((DomainEvent)evt);
@@ -75,52 +87,20 @@ namespace Memento.Persistence.SQLite
             return events.OrderBy(e => e.TimeStamp);
         }
 
-        private List<object> ExecuteQueryForDateTimeAsTicks(
-            string tableName, 
-            string aggregateIdPropertyName,
-            TableMapping mapping,
-            Guid aggregateId,
-            DateTime pointInTime,
+        private IEnumerable<object> GetQueryParametersCollection(
+            bool storeDateTimeAsTicks, 
+            Guid aggregateId, 
+            DateTime pointInTime, 
             Guid? timelineId)
         {
-            var query = $"SELECT * FROM {tableName} WHERE "
-                           + $"{aggregateIdPropertyName} = ? AND "
-                           + $"{nameof(DomainEvent.TimeStamp)} <= ?"
-                           + $" AND {nameof(DomainEvent.TimelineId)} IS NULL";
-
+            var queryParameters = storeDateTimeAsTicks
+                ? new List<object> { aggregateId, pointInTime.Ticks }
+                : new List<object> { aggregateId, pointInTime.ToISO8601Date() };
+ 
             if (timelineId.HasValue)
-                query += $" OR {nameof(DomainEvent.TimelineId)} = ?";
+                queryParameters.Add(timelineId.Value);
 
-            var queryParams = timelineId.HasValue
-                ? new object[] { aggregateId, pointInTime.Ticks, timelineId.Value }
-                : new object[] { aggregateId, pointInTime.Ticks };
-
-            var collection = SQLiteDatabase.Query(mapping, query, queryParams);
-            return collection;
-        }
-
-        private List<object> ExecuteQueryForDateTimeAsDates(
-            string tableName,
-            string aggregateIdPropertyName,
-            TableMapping mapping,
-            Guid aggregateId,
-            DateTime pointInTime,
-            Guid? timelineId)
-        {
-            var query = $"SELECT * FROM {tableName} WHERE "
-                           + $"{aggregateIdPropertyName} = ? AND "
-                           + $"{nameof(DomainEvent.TimeStamp)} <= date('?')"
-                           + $" AND {nameof(DomainEvent.TimelineId)} IS NULL";
-
-            if (timelineId.HasValue)
-                query += $" OR {nameof(DomainEvent.TimelineId)} = ?";
-
-            var queryParams = timelineId.HasValue
-                ? new object[] { aggregateId, pointInTime.ToString("yyyy-MM-ss"), timelineId.Value }
-                : new object[] { aggregateId, pointInTime.ToString("yyyy-MM-ss") };
-
-            var collection = SQLiteDatabase.Query(mapping, query, queryParams);
-            return collection;
+            return queryParameters;
         }
 
         protected override void _Save(DomainEvent @event)
