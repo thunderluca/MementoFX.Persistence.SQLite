@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SQLite;
 using SQLite.Net;
 using SQLite.Net.Interop;
 using System;
