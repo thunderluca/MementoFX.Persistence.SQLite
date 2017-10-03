@@ -18,8 +18,10 @@ namespace Memento.Persistence.SQLite.Tests.Events
             this.SecondId = secondId;
             this.Components = components;
         }
-        
+
+#pragma warning disable CS0108 // Member hides inherited member; missing new keyword
         public Guid Id { get; internal set; } //SQLite cannot use DomainEvent.Id because of private setter
+#pragma warning restore CS0108 // Member hides inherited member; missing new keyword
 
         public Guid SecondId { get; private set; }
 

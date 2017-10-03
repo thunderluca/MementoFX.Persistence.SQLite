@@ -1,11 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace System
+﻿namespace System
 {
-    public static class DateTimeExtensions
+    internal static class DateTimeExtensions
     {
         public static string ToISO8601Date(this DateTime dateTime)
         {

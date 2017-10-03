@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using SQLite;
 using SQLite.Net;
 using SQLite.Net.Interop;
 using System;
@@ -10,6 +9,10 @@ using System.Text;
 
 namespace Memento.Persistence.SQLite
 {
+    /// <summary>
+    /// Provides a collection of methods
+    /// for SQLite database management
+    /// </summary>
     public static class SQLiteHelper
     {
         private static Type[] SQLiteSuppoertedTypes =
@@ -44,6 +47,12 @@ namespace Memento.Persistence.SQLite
         private static BlobSerializerDelegate.CanSerializeDelegate canDeserializeDelegate = type => 
             SQLiteSuppoertedTypes.All(t => t != type);
 
+        /// <summary>
+        /// Creates a new instance of SQLite database
+        /// </summary>
+        /// <param name="platform">The platform where SQLite database will be stored</param>
+        /// <param name="databasePath">The path of SQLite database</param>
+        /// <param name="storeDateTimeAsTicks">If true, date values will be stored as integer timestamp</param>
         public static SQLiteConnection CreateSQLiteConnection(ISQLitePlatform platform, string databasePath, bool storeDateTimeAsTicks = true)
         {
             var serializer = new BlobSerializerDelegate(
@@ -58,12 +67,12 @@ namespace Memento.Persistence.SQLite
                 serializer: serializer);
         }
 
-        public static void CreateOrMigrateTable<T>(this SQLiteConnection connection) where T : DomainEvent
+        internal static void CreateOrMigrateTable<T>(this SQLiteConnection connection) where T : DomainEvent
         {
             CreateOrMigrateTable(connection, typeof(T));
         }
 
-        public static void CreateOrMigrateTable(this SQLiteConnection connection, Type tableType)
+        internal static void CreateOrMigrateTable(this SQLiteConnection connection, Type tableType)
         {
             if (connection == null)
             {
@@ -77,6 +86,22 @@ namespace Memento.Persistence.SQLite
                 return;
             }
             connection.MigrateTable(tableType);
+        }
+
+        internal static IEnumerable<object> GetQueryParametersCollection(
+            bool storeDateTimeAsTicks,
+            Guid aggregateId,
+            DateTime pointInTime,
+            Guid? timelineId)
+        {
+            var queryParameters = storeDateTimeAsTicks
+                ? new List<object> { aggregateId, pointInTime.Ticks }
+                : new List<object> { aggregateId, pointInTime.ToISO8601Date() };
+
+            if (timelineId.HasValue)
+                queryParameters.Add(timelineId.Value);
+
+            return queryParameters;
         }
     }
 }

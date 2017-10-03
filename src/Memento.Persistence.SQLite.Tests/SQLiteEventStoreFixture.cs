@@ -1,10 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Memento.Messaging;
 using Memento.Persistence.SQLite.Tests.Events;
 using Moq;
@@ -14,16 +11,14 @@ using SQLite.Net.Platform.Win32;
 #else
 using SQLite.Net.Platform.Generic;
 #endif
-using static Memento.Persistence.SQLite.SQLiteHelper;
 
-namespace Memento.Persistence.SQLite.Tests
+namespace Memento.Persistence.SQLite
 {
     [TestFixture]
     public class SQLiteEventStoreFixture
     {
         private IEventStore EventStore = null;
         private string databasePath = Path.Combine(Path.GetTempPath(), "local.db");
-        //private string databasePath = Path.Combine(Path.GetTempPath(), "local2.db");
 
         [SetUp]
         public void SetUp()
@@ -34,8 +29,7 @@ namespace Memento.Persistence.SQLite.Tests
 #else
             var sqlitePlatform = new SQLitePlatformGeneric(); 
 #endif
-            var sqliteConnection = CreateSQLiteConnection(sqlitePlatform, databasePath, storeDateTimeAsTicks: true);
-            //var sqliteConnection = CreateSQLiteConnection(sqlitePlatform, databasePath, storeDateTimeAsTicks: false);
+            var sqliteConnection = SQLiteHelper.CreateSQLiteConnection(sqlitePlatform, databasePath, storeDateTimeAsTicks: true);
             EventStore = new SQLiteEventStore(sqliteConnection, bus);
         }
 
