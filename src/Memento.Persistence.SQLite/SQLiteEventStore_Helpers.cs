@@ -13,7 +13,7 @@ namespace Memento.Persistence.SQLite
     /// Provides a collection of methods
     /// for SQLite database management
     /// </summary>
-    public static class SQLiteHelper
+    public partial class SQLiteEventStore
     {
         private static Type[] SQLiteSuppoertedTypes =
         {
@@ -67,6 +67,25 @@ namespace Memento.Persistence.SQLite
                 serializer: serializer);
         }
 
+        internal static IEnumerable<object> GetQueryParametersCollection(
+            bool storeDateTimeAsTicks,
+            Guid aggregateId,
+            DateTime pointInTime,
+            Guid? timelineId)
+        {
+            var queryParameters = storeDateTimeAsTicks
+                ? new List<object> { aggregateId, pointInTime.Ticks }
+                : new List<object> { aggregateId, pointInTime.ToISO8601Date() };
+
+            if (timelineId.HasValue)
+                queryParameters.Add(timelineId.Value);
+
+            return queryParameters;
+        }
+    }
+
+    internal static class SQLiteExtensions
+    {
         internal static void CreateOrMigrateTable<T>(this SQLiteConnection connection) where T : DomainEvent
         {
             CreateOrMigrateTable(connection, typeof(T));
@@ -86,22 +105,6 @@ namespace Memento.Persistence.SQLite
                 return;
             }
             connection.MigrateTable(tableType);
-        }
-
-        internal static IEnumerable<object> GetQueryParametersCollection(
-            bool storeDateTimeAsTicks,
-            Guid aggregateId,
-            DateTime pointInTime,
-            Guid? timelineId)
-        {
-            var queryParameters = storeDateTimeAsTicks
-                ? new List<object> { aggregateId, pointInTime.Ticks }
-                : new List<object> { aggregateId, pointInTime.ToISO8601Date() };
-
-            if (timelineId.HasValue)
-                queryParameters.Add(timelineId.Value);
-
-            return queryParameters;
         }
     }
 }

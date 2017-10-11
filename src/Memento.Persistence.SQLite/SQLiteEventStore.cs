@@ -8,7 +8,6 @@ using SQLite.Net.Platform.Win32;
 #else
 using SQLite.Net.Platform.Generic;
 #endif
-using static Memento.Persistence.SQLite.SQLiteHelper;
 
 namespace Memento.Persistence.SQLite
 {
@@ -16,7 +15,7 @@ namespace Memento.Persistence.SQLite
     /// Provides an implementation of a Memento event store
     /// using SQLite as the storage
     /// </summary>
-    public class SQLiteEventStore : EventStore
+    public partial class SQLiteEventStore : EventStore
     {
         /// <summary>
         /// Gets or sets the reference to the SQLite database instance

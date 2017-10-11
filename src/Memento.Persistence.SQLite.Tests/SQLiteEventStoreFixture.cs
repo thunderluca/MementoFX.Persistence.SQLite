@@ -29,7 +29,7 @@ namespace Memento.Persistence.SQLite
 #else
             var sqlitePlatform = new SQLitePlatformGeneric(); 
 #endif
-            var sqliteConnection = SQLiteHelper.CreateSQLiteConnection(sqlitePlatform, databasePath, storeDateTimeAsTicks: true);
+            var sqliteConnection = SQLiteEventStore.CreateSQLiteConnection(sqlitePlatform, databasePath, storeDateTimeAsTicks: true);
             EventStore = new SQLiteEventStore(sqliteConnection, bus);
         }
 
