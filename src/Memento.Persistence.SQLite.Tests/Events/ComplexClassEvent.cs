@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Memento.Persistence.SQLite.Tests.Events
 {
@@ -14,17 +10,12 @@ namespace Memento.Persistence.SQLite.Tests.Events
 
         public ComplexClassEvent(Guid aggId, SecondClass second)
         {
-            this.Id = Guid.NewGuid();
             this.AggId = aggId;
             this.Second = second;
         }
 
-#pragma warning disable CS0108 // Member hides inherited member; missing new keyword
-        public Guid Id { get; internal set; } //SQLite cannot use DomainEvent.Id because of private setter
-#pragma warning restore CS0108 // Member hides inherited member; missing new keyword
-
         public Guid AggId { get; private set; }
-
+        
         public SecondClass Second { get; private set; }
 
         public class SecondClass
@@ -33,7 +24,7 @@ namespace Memento.Persistence.SQLite.Tests.Events
             {
                 this.Strings = strings;
             }
-
+            
             public string[] Strings { get; private set; }
         }
     }

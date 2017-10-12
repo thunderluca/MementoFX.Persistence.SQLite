@@ -1,14 +1,9 @@
-﻿using System;
+﻿using Memento.Messaging;
+using SQLite;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Memento.Messaging;
-using SQLite.Net;
-#if X86 || X64
-using SQLite.Net.Platform.Win32;
-#else
-using SQLite.Net.Platform.Generic;
-#endif
-using static Memento.Persistence.SQLite.SQLiteHelper;
+using System.Linq.Expressions;
 
 namespace Memento.Persistence.SQLite
 {
@@ -16,7 +11,7 @@ namespace Memento.Persistence.SQLite
     /// Provides an implementation of a Memento event store
     /// using SQLite as the storage
     /// </summary>
-    public class SQLiteEventStore : EventStore
+    public partial class SQLiteEventStore : EventStore
     {
         /// <summary>
         /// Gets or sets the reference to the SQLite database instance
@@ -32,12 +27,8 @@ namespace Memento.Persistence.SQLite
             if (SQLiteDatabase == null)
             {
                 var connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["EventStore"].ConnectionString;
-#if X86 || X64
-                var sqlitePlatform = new SQLitePlatformWin32();
-#else
-                var sqlitePlatform = new SQLitePlatformGeneric();
-#endif
-                SQLiteDatabase = CreateSQLiteConnection(sqlitePlatform, connectionString);
+
+                SQLiteDatabase = new SQLiteConnection(connectionString);
             }
         }
         /// <summary>
@@ -63,9 +54,38 @@ namespace Memento.Persistence.SQLite
         /// <returns>The events which satisfy the given requirement</returns>
         public override IEnumerable<T> Find<T>(Func<T, bool> filter)
         {
+            throw new NotImplementedException();
+
+            //SQLiteDatabase.CreateOrMigrateTable<T>();
+
+            //var eventType = typeof(T);
+
+            //var tableMethod = typeof(SQLiteConnection).GetMethods().First(m => m.Name == nameof(SQLiteConnection.Table));
+            //var tableMethodGeneric = tableMethod.MakeGenericMethod(eventType);
+
+            //var table = tableMethodGeneric.Invoke(SQLiteDatabase, new object[0]);
+
+            //var tableType = table.GetType();
+            //var method = tableType.GetMethods().First(m => m.Name == nameof(TableQuery<T>.Where));
+
+            //return (TableQuery<T>)method.Invoke(table, new object[] { filter });
+        }
+
+        public IEnumerable<T> _Find<T>(Expression<Func<T, bool>> filter) where T : DomainEvent
+        {
             SQLiteDatabase.CreateOrMigrateTable<T>();
 
-            return SQLiteDatabase.Table<T>().Where(filter);
+            var eventType = typeof(T);
+
+            var tableMethod = typeof(SQLiteConnection).GetMethods().First(m => m.Name == nameof(SQLiteConnection.Table));
+            var tableMethodGeneric = tableMethod.MakeGenericMethod(eventType);
+
+            var table = tableMethodGeneric.Invoke(SQLiteDatabase, new object[0]);
+
+            var tableType = table.GetType();
+            var method = tableType.GetMethods().First(m => m.Name == nameof(TableQuery<T>.Where));
+
+            return (TableQuery<T>)method.Invoke(table, new object[] { filter });
         }
 
         /// <summary>
@@ -94,17 +114,17 @@ namespace Memento.Persistence.SQLite
                 {
                     var query = $"SELECT * FROM {tableName} WHERE "
                         + $"{eventDescriptor.AggregateIdPropertyName} = ? AND "
-                        + $"{nameof(DomainEvent.TimeStamp)} <= {(SQLiteDatabase.StoreDateTimeAsTicks ? "date('?')" : "?")}"
+                        + $"{nameof(DomainEvent.TimeStamp)} <= \"?\""
                         + $" AND {nameof(DomainEvent.TimelineId)} IS NULL";
 
                     if (timelineId.HasValue)
                         query += $" OR {nameof(DomainEvent.TimelineId)} = ?";
 
                     var queryParams = GetQueryParametersCollection(
-                        storeDateTimeAsTicks: SQLiteDatabase.StoreDateTimeAsTicks, 
+                        //storeDateTimeAsTicks: SQLiteDatabase.StoreDateTimeAsTicks, 
                         aggregateId: aggregateId, 
                         pointInTime: pointInTime,
-                        timelineId: timelineId);
+                        timelineId: timelineId).ToArray();
 
                     var collection = SQLiteDatabase.Query(mapping, query, queryParams);
 
