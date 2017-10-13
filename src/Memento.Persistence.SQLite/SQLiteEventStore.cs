@@ -55,23 +55,11 @@ namespace Memento.Persistence.SQLite
         public override IEnumerable<T> Find<T>(Func<T, bool> filter)
         {
             throw new NotImplementedException();
-
-            //SQLiteDatabase.CreateOrMigrateTable<T>();
-
-            //var eventType = typeof(T);
-
-            //var tableMethod = typeof(SQLiteConnection).GetMethods().First(m => m.Name == nameof(SQLiteConnection.Table));
-            //var tableMethodGeneric = tableMethod.MakeGenericMethod(eventType);
-
-            //var table = tableMethodGeneric.Invoke(SQLiteDatabase, new object[0]);
-
-            //var tableType = table.GetType();
-            //var method = tableType.GetMethods().First(m => m.Name == nameof(TableQuery<T>.Where));
-
-            //return (TableQuery<T>)method.Invoke(table, new object[] { filter });
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public IEnumerable<T> _Find<T>(Expression<Func<T, bool>> filter) where T : DomainEvent
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             SQLiteDatabase.CreateOrMigrateTable<T>();
 
