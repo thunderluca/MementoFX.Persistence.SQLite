@@ -21,13 +21,12 @@ namespace Memento.Persistence.SQLite
         /// <summary>
         /// Creates a new instance of the event store
         /// </summary>
+        /// <param name="connectionString">The connection string of document store to be used by the instance</param>
         /// <param name="eventDispatcher">The event dispatcher to be used by the instance</param>
-        public SQLiteEventStore(IEventDispatcher eventDispatcher) : base(eventDispatcher)
+        public SQLiteEventStore(string connectionString, IEventDispatcher eventDispatcher) : base(eventDispatcher)
         {
             if (SQLiteDatabase == null)
             {
-                var connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["EventStore"].ConnectionString;
-
                 SQLiteDatabase = new SQLiteConnection(connectionString);
             }
         }

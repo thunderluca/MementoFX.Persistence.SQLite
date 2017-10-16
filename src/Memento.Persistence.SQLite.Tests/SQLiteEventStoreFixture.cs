@@ -1,23 +1,21 @@
 ﻿using Memento.Messaging;
 using Memento.Persistence.SQLite.Tests.Events;
 using Moq;
-using NUnit.Framework;
 using SharpTestsEx;
 using SQLite;
 using System;
 using System.IO;
 using System.Linq;
+using Xunit;
 
 namespace Memento.Persistence.SQLite
 {
-    [TestFixture]
     public class SQLiteEventStoreFixture
     {
         private IEventStore EventStore = null;
         private string databasePath = Path.Combine(Path.GetTempPath(), "local.db");
 
-        [SetUp]
-        public void SetUp()
+        public SQLiteEventStoreFixture()
         {
             var bus = new Mock<IEventDispatcher>().Object;
 
@@ -25,10 +23,10 @@ namespace Memento.Persistence.SQLite
             EventStore = new SQLiteEventStore(sqliteConnection, bus);
         }
 
-        [Test]
+        [Fact]
         public void SQLiteEventStore_Throws_When_EventDispatcher_Is_Null()
         {
-            Executing.This(() => new SQLiteEventStore(null))
+            Executing.This(() => new SQLiteEventStore(databasePath, null))
                 .Should()
                 .Throw<ArgumentNullException>()
                 .And
@@ -39,7 +37,7 @@ namespace Memento.Persistence.SQLite
                 .EqualTo("eventDispatcher");
         }
 
-        [Test]
+        [Fact]
         public void Save_Throws_When_Event_Is_Null()
         {
             Executing.This(() => EventStore.Save(null))
@@ -53,7 +51,7 @@ namespace Memento.Persistence.SQLite
                 .EqualTo("event");
         }
 
-        [Test]
+        [Fact]
         public void Save_Should_Allow_Retrieval()
         {
             var @event = new PlainEvent(Guid.NewGuid(), "Hello Memento", DateTime.UtcNow, double.MaxValue);
@@ -63,15 +61,15 @@ namespace Memento.Persistence.SQLite
 
             //var events = EventStore.Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId).ToArray();
             var events = ((SQLiteEventStore)EventStore)._Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId).ToArray();
-            Assert.AreEqual(events.Length, 1);
-            Assert.AreEqual(events.First().Id, @event.Id);
-            Assert.AreEqual(events.First().TimeStamp.ToMilliSeconds(), @event.TimeStamp.ToMilliSeconds());
-            Assert.AreEqual(events.First().Title, @event.Title);
-            Assert.AreEqual(events.First().Date, @event.Date);
-            Assert.AreEqual(events.First().Number, @event.Number);
+            Assert.InRange(events.Length, low: 1, high: 1);
+            Assert.Equal(events.First().Id, @event.Id);
+            Assert.Equal(events.First().TimeStamp.ToMilliSeconds(), @event.TimeStamp.ToMilliSeconds());
+            Assert.Equal(events.First().Title, @event.Title);
+            Assert.Equal(events.First().Date, @event.Date);
+            Assert.Equal(events.First().Number, @event.Number);
         }
 
-        [Test]
+        [Fact]
         public void RetrieveEvents_Should_Allow_Retrieval()
         {
             var firstEvent = new PlainEvent(Guid.NewGuid(), "Hello Memento", DateTime.UtcNow, double.MaxValue);
@@ -87,7 +85,7 @@ namespace Memento.Persistence.SQLite
             var events = EventStore.RetrieveEvents(firstEvent.AggregateId, firstEvent.TimeStamp.AddDays(1), eventDescriptors, timelineId: null)
                 .Cast<PlainEvent>()
                 .ToArray();
-            Assert.AreEqual(events.Length, 1);
+            Assert.InRange(events.Length, low: 1, high: 1);
         }
 
         //[Test]
@@ -124,18 +122,18 @@ namespace Memento.Persistence.SQLite
 
         //    //var events = EventStore.Find<ComplexCollectionEvent>(cce => cce.SecondId == @event.SecondId).ToArray();
         //    var events = ((SQLiteEventStore)EventStore)._Find<ComplexCollectionEvent>(cce => cce.SecondId == @event.SecondId).ToArray();
-        //    Assert.AreEqual(events.Length, 1);
-        //    Assert.AreEqual(events.First().Id, @event.Id);
-        //    Assert.AreEqual(events.First().SecondId, @event.SecondId);
-        //    Assert.AreEqual(events.First().TimeStamp, @event.TimeStamp);
-        //    Assert.AreEqual(events.First().Components.First().Title, @event.Components.First().Title);
-        //    Assert.AreEqual(events.First().Components.First().Number, @event.Components.First().Number);
+        //    Assert.Equal(events.Length, 1);
+        //    Assert.Equal(events.First().Id, @event.Id);
+        //    Assert.Equal(events.First().SecondId, @event.SecondId);
+        //    Assert.Equal(events.First().TimeStamp, @event.TimeStamp);
+        //    Assert.Equal(events.First().Components.First().Title, @event.Components.First().Title);
+        //    Assert.Equal(events.First().Components.First().Number, @event.Components.First().Number);
 
         //    //var nestedClassEvents = EventStore.Find<ComplexClassEvent>(cce => cce.AggId == nestedClassEvent.AggId);
         //    var nestedClassEvents = ((SQLiteEventStore)EventStore)._Find<ComplexClassEvent>(cce => cce.AggId == nestedClassEvent.AggId);
-        //    Assert.AreEqual(nestedClassEvents.First().Id, nestedClassEvent.Id);
-        //    Assert.AreEqual(nestedClassEvents.First().TimeStamp, nestedClassEvent.TimeStamp);
-        //    Assert.AreEqual(nestedClassEvents.First().AggId, nestedClassEvent.AggId);
+        //    Assert.Equal(nestedClassEvents.First().Id, nestedClassEvent.Id);
+        //    Assert.Equal(nestedClassEvents.First().TimeStamp, nestedClassEvent.TimeStamp);
+        //    Assert.Equal(nestedClassEvents.First().AggId, nestedClassEvent.AggId);
         //    Assert.AreNotEqual(nestedClassEvents.First().Second, null);
         //    Assert.Contains(nestedClassEvent.Second.Strings.First(), nestedClassEvents.First().Second.Strings);
         //    Assert.Contains(nestedClassEvent.Second.Strings.Last(), nestedClassEvents.First().Second.Strings);
