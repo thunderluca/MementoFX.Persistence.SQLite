@@ -1,16 +1,16 @@
-﻿using Memento.Messaging;
+﻿using MementoFX.Messaging;
 using SQLite;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Memento.Persistence.SQLite
+namespace MementoFX.Persistence.SQLite
 {
     /// <summary>
     /// Provides an implementation of a Memento event store
     /// using SQLite as the storage
     /// </summary>
-    public partial class SQLiteEventStore : EventStore
+    public class SQLiteEventStore : EventStore
     {
         /// <summary>
         /// Gets or sets the reference to the SQLite database instance
@@ -29,6 +29,7 @@ namespace Memento.Persistence.SQLite
                 SQLiteDatabase = new SQLiteConnection(connectionString);
             }
         }
+
         /// <summary>
         /// Creates a new instance of the event store
         /// </summary>
@@ -36,12 +37,7 @@ namespace Memento.Persistence.SQLite
         /// <param name="eventDispatcher">The event dispatcher to be used by the instance</param>
         public SQLiteEventStore(SQLiteConnection sqliteDatabase, IEventDispatcher eventDispatcher) : base(eventDispatcher)
         {
-            if (sqliteDatabase == null)
-            {
-                throw new ArgumentNullException(nameof(sqliteDatabase));
-            }
-
-            SQLiteDatabase = sqliteDatabase;
+            SQLiteDatabase = sqliteDatabase ?? throw new ArgumentNullException(nameof(sqliteDatabase));
         }
 
         /// <summary>
@@ -114,6 +110,22 @@ namespace Memento.Persistence.SQLite
             SQLiteDatabase.CreateOrMigrateTable(@event.GetType());
 
             SQLiteDatabase.Insert(@event, @event.GetType());
+        }
+
+        private static IEnumerable<object> GetQueryParametersCollection(Guid aggregateId, DateTime pointInTime, Guid? timelineId)
+        {
+            var queryParameters = new List<object>
+            {
+                aggregateId,
+                pointInTime.ToISO8601Date()
+            };
+
+            if (timelineId.HasValue)
+            {
+                queryParameters.Add(timelineId.Value);
+            }
+
+            return queryParameters;
         }
     }
 }

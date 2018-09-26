@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Memento.Persistence.SQLite.Tests.Events
+namespace MementoFX.Persistence.SQLite.Tests.Events
 {
     public class PlainEvent : DomainEvent
     {

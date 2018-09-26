@@ -1,5 +1,5 @@
-﻿using Memento.Messaging;
-using Memento.Persistence.SQLite.Tests.Events;
+﻿using MementoFX.Messaging;
+using MementoFX.Persistence.SQLite.Tests.Events;
 using Moq;
 using SharpTestsEx;
 using SQLite;
@@ -8,12 +8,12 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace Memento.Persistence.SQLite
+namespace MementoFX.Persistence.SQLite
 {
     public class SQLiteEventStoreFixture
     {
         private IEventStore EventStore = null;
-        private string databasePath = Path.Combine(Path.GetTempPath(), "local.db");
+        private readonly string databasePath = Path.Combine(Path.GetTempPath(), "local.db");
 
         public SQLiteEventStoreFixture()
         {
@@ -60,7 +60,7 @@ namespace Memento.Persistence.SQLite
             EventStore.Save(eventToIgnore);
 
             //var events = EventStore.Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId).ToArray();
-            var events = ((SQLiteEventStore)EventStore)._Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId).ToArray();
+            var events = ((SQLiteEventStore)EventStore).Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId).ToArray();
             Assert.InRange(events.Length, low: 1, high: 1);
             Assert.Equal(events.First().Id, @event.Id);
             Assert.Equal(events.First().TimeStamp.ToMilliSeconds(), @event.TimeStamp.ToMilliSeconds());
