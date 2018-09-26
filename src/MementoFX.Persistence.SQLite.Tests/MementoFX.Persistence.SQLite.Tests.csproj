@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Memento.Persistence.SQLite\Memento.Persistence.SQLite.csproj" />
+    <ProjectReference Include="..\MementoFX.Persistence.SQLite\MementoFX.Persistence.SQLite.csproj" />
   </ItemGroup>
 
 </Project>
