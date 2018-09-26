@@ -3,7 +3,6 @@ using SQLite;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 
 namespace Memento.Persistence.SQLite
 {
@@ -53,26 +52,9 @@ namespace Memento.Persistence.SQLite
         /// <returns>The events which satisfy the given requirement</returns>
         public override IEnumerable<T> Find<T>(Func<T, bool> filter)
         {
-            throw new NotImplementedException();
-        }
-
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        public IEnumerable<T> _Find<T>(Expression<Func<T, bool>> filter) where T : DomainEvent
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-        {
             SQLiteDatabase.CreateOrMigrateTable<T>();
 
-            var eventType = typeof(T);
-
-            var tableMethod = typeof(SQLiteConnection).GetMethods().First(m => m.Name == nameof(SQLiteConnection.Table));
-            var tableMethodGeneric = tableMethod.MakeGenericMethod(eventType);
-
-            var table = tableMethodGeneric.Invoke(SQLiteDatabase, new object[0]);
-
-            var tableType = table.GetType();
-            var method = tableType.GetMethods().First(m => m.Name == nameof(TableQuery<T>.Where));
-
-            return (TableQuery<T>)method.Invoke(table, new object[] { filter });
+            return SQLiteDatabase.Table<T>().Where(filter);
         }
 
         /// <summary>
