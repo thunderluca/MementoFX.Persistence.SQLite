@@ -3,6 +3,7 @@ using SQLite;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace MementoFX.Persistence.SQLite
 {
@@ -46,11 +47,13 @@ namespace MementoFX.Persistence.SQLite
         /// <typeparam name="T">The type of the event</typeparam>
         /// <param name="filter">The requirement</param>
         /// <returns>The events which satisfy the given requirement</returns>
-        public override IEnumerable<T> Find<T>(Func<T, bool> filter)
+        public override IEnumerable<T> Find<T>(Expression<Func<T, bool>> filter)
         {
-            SQLiteDatabase.CreateOrMigrateTable<T>();
+            SQLiteDatabase.CreateTable<T>();
 
-            return SQLiteDatabase.Table<T>().Where(filter);
+            var events = SQLiteDatabase.Table<T>().Where(filter);
+
+            return events;
         }
 
         /// <summary>
@@ -107,7 +110,7 @@ namespace MementoFX.Persistence.SQLite
         /// <param name="event">The event to be saved</param>
         protected override void _Save(DomainEvent @event)
         {
-            SQLiteDatabase.CreateOrMigrateTable(@event.GetType());
+            SQLiteDatabase.CreateTable(@event.GetType());
 
             SQLiteDatabase.Insert(@event, @event.GetType());
         }
