@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace MementoFX.Persistence.SQLite
+namespace MementoFX.Persistence.Sqlite
 {
     public class SQLiteEventStoreFixture
     {
@@ -60,10 +60,10 @@ namespace MementoFX.Persistence.SQLite
             EventStore.Save(eventToIgnore);
 
             //var events = EventStore.Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId).ToArray();
-            var events = ((SQLiteEventStore)EventStore).Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId).ToArray();
-            Assert.InRange(events.Length, low: 1, high: 1);
+            var events = EventStore.Find<PlainEvent>(pe => pe.AggregateId == @event.AggregateId).ToArray();
+            Assert.Single(events);
             Assert.Equal(events.First().Id, @event.Id);
-            Assert.Equal(events.First().TimeStamp.ToMilliSeconds(), @event.TimeStamp.ToMilliSeconds());
+            Assert.Equal(events.First().TimeStamp, @event.TimeStamp);
             Assert.Equal(events.First().Title, @event.Title);
             Assert.Equal(events.First().Date, @event.Date);
             Assert.Equal(events.First().Number, @event.Number);
@@ -85,7 +85,8 @@ namespace MementoFX.Persistence.SQLite
             var events = EventStore.RetrieveEvents(firstEvent.AggregateId, firstEvent.TimeStamp.AddDays(1), eventDescriptors, timelineId: null)
                 .Cast<PlainEvent>()
                 .ToArray();
-            Assert.InRange(events.Length, low: 1, high: 1);
+
+            Assert.Single(events);
         }
 
         //[Test]
@@ -152,20 +153,5 @@ namespace MementoFX.Persistence.SQLite
 
         //    Assert.IsNotEmpty(events);
         //}
-    }
-
-    public static class DateTimeExtensions
-    {
-        internal static long ToMilliSeconds(this DateTime dateTime)
-        {
-            if (dateTime == null)
-            {
-                throw new ArgumentNullException(nameof(dateTime));
-            }
-
-            return (long)dateTime.ToUniversalTime()
-                .Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc))
-                .TotalMilliseconds;
-        }
     }
 }

@@ -4,10 +4,6 @@ namespace MementoFX.Persistence.SQLite.Tests.Events
 {
     public class ComplexCollectionEvent : DomainEvent
     {
-        public ComplexCollectionEvent() //SQLite ContractResolver need it
-        {
-        }
-
         public ComplexCollectionEvent(Guid secondId, Component[] components)
         {
             this.SecondId = secondId;

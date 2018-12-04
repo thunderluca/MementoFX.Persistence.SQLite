@@ -1,11 +1,13 @@
 ﻿using MementoFX.Messaging;
+using MementoFX.Persistence.SQLite.Data;
+using MementoFX.Persistence.SQLite.Helpers;
 using SQLite;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace MementoFX.Persistence.SQLite
+namespace MementoFX.Persistence.Sqlite
 {
     /// <summary>
     /// Provides an implementation of a Memento event store
@@ -49,11 +51,23 @@ namespace MementoFX.Persistence.SQLite
         /// <returns>The events which satisfy the given requirement</returns>
         public override IEnumerable<T> Find<T>(Expression<Func<T, bool>> filter)
         {
-            SQLiteDatabase.CreateTable<T>();
+            var eventType = typeof(T);
+            var tableName = eventType.Name;
 
-            var events = SQLiteDatabase.Table<T>().Where(filter);
+            if (!SQLiteDatabase.CheckIfTableExists(tableName))
+            {
+                return new T[0];
+            }
 
-            return events;
+            var sqlExpression = filter.ToSqlExpression();
+
+            var query = Commands.BuildSelectWhereCommandText(tableName, "*") + " " + sqlExpression.CommandText;
+
+            var args = sqlExpression.Parameters.Select(p => p.Value).ToArray();
+            
+            var collection = SQLiteDatabase.ExecuteQuery<T>(tableName, query, args);
+            
+            return collection;
         }
 
         /// <summary>
@@ -67,37 +81,63 @@ namespace MementoFX.Persistence.SQLite
         public override IEnumerable<DomainEvent> RetrieveEvents(Guid aggregateId, DateTime pointInTime, IEnumerable<EventMapping> eventDescriptors, Guid? timelineId)
         {
             var events = new List<DomainEvent>();
-
-            var descriptorsGrouped = eventDescriptors
-                .GroupBy(k => k.EventType);
             
-            foreach (var descriptorsGroup in descriptorsGrouped)
+            foreach (var descriptorsGroup in eventDescriptors.GroupBy(k => k.EventType))
             {
                 var eventType = descriptorsGroup.Key;
+
                 var tableName = eventType.Name;
 
-                var mapping = SQLiteDatabase.GetMapping(eventType);
+                if (!SQLiteDatabase.CheckIfTableExists(tableName)) continue;
 
-                foreach (var eventDescriptor in descriptorsGroup)
+                var query = Commands.BuildSelectWhereCommandText(tableName, "*");
+
+                var args = new List<object>();
+
+                var filters = new List<string>();
+
+                var counter = 0;
+
+                for (var i = 0; i < descriptorsGroup.Count(); i++)
                 {
-                    var query = $"SELECT * FROM {tableName} WHERE "
-                        + $"{eventDescriptor.AggregateIdPropertyName} = ? AND "
-                        + $"{nameof(DomainEvent.TimeStamp)} <= \"?\""
-                        + $" AND {nameof(DomainEvent.TimelineId)} IS NULL";
+                    var eventDescriptor = descriptorsGroup.ElementAt(i);
+                    
+                    var filter = Commands.JoinWithSpace(eventDescriptor.AggregateIdPropertyName, "=", string.Format(Commands.ParameterNameFormat, counter));
+                    counter++;
 
-                    if (timelineId.HasValue)
-                        query += $" OR {nameof(DomainEvent.TimelineId)} = ?";
+                    filters.Add(filter);
 
-                    var queryParams = GetQueryParametersCollection(
-                        //storeDateTimeAsTicks: SQLiteDatabase.StoreDateTimeAsTicks, 
-                        aggregateId: aggregateId, 
-                        pointInTime: pointInTime,
-                        timelineId: timelineId).ToArray();
+                    args.Add(aggregateId);
+                }
 
-                    var collection = SQLiteDatabase.Query(mapping, query, queryParams);
+                var filtersText = filters.Count == 1 ? filters[0] : Commands.Enclose(string.Join(" OR ", filters));
 
+                query = Commands.JoinWithSpace(query, filtersText);
+
+                query = Commands.JoinWithSpace(query, "AND", nameof(DomainEvent.TimeStamp), "<=", string.Format(Commands.ParameterNameFormat, counter));
+                counter++;
+
+                args.Add(pointInTime.ToISO8601Date());
+
+                if (!timelineId.HasValue)
+                {
+                    query = Commands.JoinWithSpace(query, "AND", nameof(DomainEvent.TimelineId), "IS", "NULL");
+                }
+                else
+                {
+                    query += Commands.JoinWithSpace(query, "AND", Commands.Enclose(nameof(DomainEvent.TimelineId), "IS", "NULL", "OR", nameof(DomainEvent.TimelineId), "=", string.Format(Commands.ParameterNameFormat, counter)));
+                    counter++;
+
+                    args.Add(timelineId.Value);
+                }
+                
+                var collection = SQLiteDatabase.ExecuteQuery(eventType, tableName, query, args.ToArray());
+                if (collection != null && collection.Count() > 0)
+                {
                     foreach (var evt in collection)
+                    {
                         events.Add((DomainEvent)evt);
+                    }
                 }
             }
 
@@ -110,25 +150,20 @@ namespace MementoFX.Persistence.SQLite
         /// <param name="event">The event to be saved</param>
         protected override void _Save(DomainEvent @event)
         {
-            SQLiteDatabase.CreateTable(@event.GetType());
+            var eventType = @event.GetType();
+            var tableName = eventType.Name;
 
-            SQLiteDatabase.Insert(@event, @event.GetType());
-        }
+            SQLiteDatabase.CreateOrUpdateTable(@event, eventType, tableName, autoIncrementalTableMigrations: true);
 
-        private static IEnumerable<object> GetQueryParametersCollection(Guid aggregateId, DateTime pointInTime, Guid? timelineId)
-        {
-            var queryParameters = new List<object>
-            {
-                aggregateId,
-                pointInTime.ToISO8601Date()
-            };
+            var parametersData = @event.GetParametersData(eventType, SQLiteDatabase.StoreDateTimeAsTicks);
 
-            if (timelineId.HasValue)
-            {
-                queryParameters.Add(timelineId.Value);
-            }
+            var parametersNames = parametersData.Select(p => "?");
 
-            return queryParameters;
+            var query = Commands.BuildInsertCommandText(tableName, parametersData.Select(t => t.Name).ToArray(), parametersNames.ToArray());
+
+            var parameters = parametersData.Select(p => p.Value).ToArray();
+
+            SQLiteDatabase.Execute(query, parameters);
         }
     }
 }

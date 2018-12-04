@@ -4,10 +4,6 @@ namespace MementoFX.Persistence.SQLite.Tests.Events
 {
     public class PlainEvent : DomainEvent
     {
-        public PlainEvent() //SQLite ContractResolver need it
-        {
-        }
-
         public PlainEvent(Guid aggregateId, string title, DateTime date, double number)
         {
             this.AggregateId = aggregateId;
