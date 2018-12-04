@@ -89,56 +89,53 @@ namespace MementoFX.Persistence.Sqlite
             Assert.Single(events);
         }
 
-        //[Test]
-        //public void Save_Should_Allow_Complex_Types()
-        //{
-        //    var @event = new ComplexCollectionEvent(Guid.NewGuid(), new[]
-        //    {
-        //        new ComplexCollectionEvent.Component("Hi", 51)
-        //    });
-        //    var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' ')));
-        //    Executing.This(() => EventStore.Save(@event))
-        //        .Should()
-        //        .NotThrow();
-        //    Executing.This(() => EventStore.Save(nestedClassEvent))
-        //        .Should()
-        //        .NotThrow();
-        //}
+        [Fact]
+        public void Save_Should_Allow_Complex_Types()
+        {
+            var @event = new ComplexCollectionEvent(Guid.NewGuid(), new[]
+            {
+                new ComplexCollectionEvent.Component("Hi", 51)
+            });
 
-        //[Test]
-        //public void Save_Should_Allow_Retrieval_Of_Complex_Types()
-        //{
-        //    var @event = new ComplexCollectionEvent(Guid.NewGuid(), new[]
-        //    {
-        //        new ComplexCollectionEvent.Component("Hi", 51)
-        //    });
-        //    var eventToIgnore = new ComplexCollectionEvent(Guid.NewGuid(), new[]
-        //    {
-        //        new ComplexCollectionEvent.Component("Torino", 15)
-        //    });
-        //    var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' ')));
-        //    EventStore.Save(@event);
-        //    EventStore.Save(eventToIgnore);
-        //    EventStore.Save(nestedClassEvent);
+            var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' ')));
 
-        //    //var events = EventStore.Find<ComplexCollectionEvent>(cce => cce.SecondId == @event.SecondId).ToArray();
-        //    var events = ((SQLiteEventStore)EventStore)._Find<ComplexCollectionEvent>(cce => cce.SecondId == @event.SecondId).ToArray();
-        //    Assert.Equal(events.Length, 1);
-        //    Assert.Equal(events.First().Id, @event.Id);
-        //    Assert.Equal(events.First().SecondId, @event.SecondId);
-        //    Assert.Equal(events.First().TimeStamp, @event.TimeStamp);
-        //    Assert.Equal(events.First().Components.First().Title, @event.Components.First().Title);
-        //    Assert.Equal(events.First().Components.First().Number, @event.Components.First().Number);
+            Executing.This(() => EventStore.Save(@event)).Should().NotThrow();
 
-        //    //var nestedClassEvents = EventStore.Find<ComplexClassEvent>(cce => cce.AggId == nestedClassEvent.AggId);
-        //    var nestedClassEvents = ((SQLiteEventStore)EventStore)._Find<ComplexClassEvent>(cce => cce.AggId == nestedClassEvent.AggId);
-        //    Assert.Equal(nestedClassEvents.First().Id, nestedClassEvent.Id);
-        //    Assert.Equal(nestedClassEvents.First().TimeStamp, nestedClassEvent.TimeStamp);
-        //    Assert.Equal(nestedClassEvents.First().AggId, nestedClassEvent.AggId);
-        //    Assert.AreNotEqual(nestedClassEvents.First().Second, null);
-        //    Assert.Contains(nestedClassEvent.Second.Strings.First(), nestedClassEvents.First().Second.Strings);
-        //    Assert.Contains(nestedClassEvent.Second.Strings.Last(), nestedClassEvents.First().Second.Strings);
-        //}
+            Executing.This(() => EventStore.Save(nestedClassEvent)).Should().NotThrow();
+        }
+
+        [Fact]
+        public void Save_Should_Allow_Retrieval_Of_Complex_Types()
+        {
+            var @event = new ComplexCollectionEvent(Guid.NewGuid(), new[]
+            {
+                new ComplexCollectionEvent.Component("Hi", 51)
+            });
+            var eventToIgnore = new ComplexCollectionEvent(Guid.NewGuid(), new[]
+            {
+                new ComplexCollectionEvent.Component("Torino", 15)
+            });
+            var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' ')));
+            EventStore.Save(@event);
+            EventStore.Save(eventToIgnore);
+            EventStore.Save(nestedClassEvent);
+            
+            var events = EventStore.Find<ComplexCollectionEvent>(cce => cce.SecondId == @event.SecondId).ToArray();
+            Assert.Single(events);
+            Assert.Equal(events.First().Id, @event.Id);
+            Assert.Equal(events.First().SecondId, @event.SecondId);
+            Assert.Equal(events.First().TimeStamp, @event.TimeStamp);
+            Assert.Equal(events.First().Components.First().Title, @event.Components.First().Title);
+            Assert.Equal(events.First().Components.First().Number, @event.Components.First().Number);
+            
+            var nestedClassEvents = EventStore.Find<ComplexClassEvent>(cce => cce.AggId == nestedClassEvent.AggId);
+            Assert.Equal(nestedClassEvents.First().Id, nestedClassEvent.Id);
+            Assert.Equal(nestedClassEvents.First().TimeStamp, nestedClassEvent.TimeStamp);
+            Assert.Equal(nestedClassEvents.First().AggId, nestedClassEvent.AggId);
+            Assert.NotNull(nestedClassEvents.First().Second);
+            Assert.Contains(nestedClassEvent.Second.Strings.First(), nestedClassEvents.First().Second.Strings);
+            Assert.Contains(nestedClassEvent.Second.Strings.Last(), nestedClassEvents.First().Second.Strings);
+        }
 
         //[Test]
         //public void Find_Allow_Filter_By_Complex_Property()
