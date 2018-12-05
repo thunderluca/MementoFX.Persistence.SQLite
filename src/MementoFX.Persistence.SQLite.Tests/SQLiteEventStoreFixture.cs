@@ -97,7 +97,7 @@ namespace MementoFX.Persistence.Sqlite
                 new ComplexCollectionEvent.Component("Hi", 51)
             });
 
-            var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' ')));
+            var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' '), TimeSpan.MaxValue));
 
             Executing.This(() => EventStore.Save(@event)).Should().NotThrow();
 
@@ -115,7 +115,7 @@ namespace MementoFX.Persistence.Sqlite
             {
                 new ComplexCollectionEvent.Component("Torino", 15)
             });
-            var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' ')));
+            var nestedClassEvent = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass("STAR WARS".Split(' '), TimeSpan.Zero));
             EventStore.Save(@event);
             EventStore.Save(eventToIgnore);
             EventStore.Save(nestedClassEvent);
@@ -137,18 +137,15 @@ namespace MementoFX.Persistence.Sqlite
             Assert.Contains(nestedClassEvent.Second.Strings.Last(), nestedClassEvents.First().Second.Strings);
         }
 
-        //[Test]
-        //public void Find_Allow_Filter_By_Complex_Property()
-        //{
-        //    var @event = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass(new string[0]));
-        //    EventStore.Save(@event);
+        [Fact]
+        public void Find_Allow_Filter_By_Complex_Property()
+        {
+            var @event = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass(new string[0], DateTime.UtcNow.TimeOfDay));
+            EventStore.Save(@event);
+            
+            var events = EventStore.Find<ComplexClassEvent>(e => e.Second.Time > TimeSpan.Zero).ToArray();
 
-        //    //var events = EventStore.Find<ComplexClassEvent>(e => e.Second != null && e.Second.Strings.Length == 0).ToArray();
-        //    var events = ((SQLiteEventStore)EventStore)
-        //        ._Find<ComplexClassEvent>(e => e.Second != null && e.Second.Strings.Length == 0)
-        //        .ToArray();
-
-        //    Assert.IsNotEmpty(events);
-        //}
+            Assert.NotEmpty(events);
+        }
     }
 }

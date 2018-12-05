@@ -30,6 +30,7 @@ namespace MementoFX.Persistence.Sqlite
             if (SQLiteDatabase == null)
             {
                 SQLiteDatabase = new SQLiteConnection(connectionString);
+                SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
             }
         }
 
@@ -41,6 +42,7 @@ namespace MementoFX.Persistence.Sqlite
         public SQLiteEventStore(SQLiteConnection sqliteDatabase, IEventDispatcher eventDispatcher) : base(eventDispatcher)
         {
             SQLiteDatabase = sqliteDatabase ?? throw new ArgumentNullException(nameof(sqliteDatabase));
+            SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
         }
 
         /// <summary>
@@ -65,9 +67,7 @@ namespace MementoFX.Persistence.Sqlite
 
             var args = sqlExpression.Parameters.Select(p => p.Value).ToArray();
             
-            var collection = SQLiteDatabase.ExecuteQuery<T>(tableName, query, args);
-            
-            return collection;
+            return SQLiteDatabase.ExecuteQuery<T>(tableName, query, args);
         }
 
         /// <summary>
@@ -101,8 +101,10 @@ namespace MementoFX.Persistence.Sqlite
                 for (var i = 0; i < descriptorsGroup.Count(); i++)
                 {
                     var eventDescriptor = descriptorsGroup.ElementAt(i);
-                    
-                    var filter = Commands.JoinWithSpace(eventDescriptor.AggregateIdPropertyName, "=", string.Format(Commands.ParameterNameFormat, counter));
+
+                    var leftPart = TableHelper.GetFixedLeftPart(eventDescriptor.AggregateIdPropertyName);
+
+                    var filter = Commands.JoinWithSpace(leftPart, "=", string.Format(Commands.ParameterNameFormat, counter));
                     counter++;
 
                     filters.Add(filter);

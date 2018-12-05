@@ -134,36 +134,6 @@ namespace MementoFX.Persistence.SQLite.Helpers
             connection.Execute(query);
         }
 
-        private static string[] GetBaseDomainEventProperties()
-        {
-            return new[] { nameof(DomainEvent.Id), nameof(DomainEvent.TimelineId), nameof(DomainEvent.TimeStamp) };
-        }
-
-        public static IList<Tuple<string, Type>> GetTableSchema(this SQLiteConnection connection, string tableName)
-        {
-            if (connection == null)
-            {
-                throw new ArgumentNullException(nameof(connection));
-            }
-
-            var query = string.Format(Commands.SelectTableExistsFormat, tableName);
-
-            var columnsData = connection.Query<DbColumn>(query);
-
-            if (columnsData == null || columnsData.Count == 0) return new List<Tuple<string, Type>>();
-            
-            return columnsData.Select(MapColumnType).ToList();
-        }
-
-        private static Tuple<string, Type> MapColumnType(DbColumn column)
-        {
-            var isNullable = Convert.ToBoolean(column.NotNull);
-
-            var columnType = TypeHelper.GetClrType(column.Type, isNullable);
-
-            return Tuple.Create(column.Name, columnType);
-        }
-
         public static IEnumerable<object> ExecuteQuery(this SQLiteConnection connection, Type type, string tableName, string query, params object[] args)
         {
             if (connection == null)
@@ -187,18 +157,7 @@ namespace MementoFX.Persistence.SQLite.Helpers
                 throw new ArgumentOutOfRangeException(nameof(constructorInfos));
             }
 
-            if (args != null&& args.Length > 0)
-            {
-                for (var i = 0; i < args.Length; i++)
-                {
-                    if (args[i] is string || args[i] is Guid)
-                    {
-                        args[i] = $"'{args[i]}'";
-                    }
-                }
-
-                query = string.Format(query, args);
-            }
+            query = FormatQuery(query, args);
 
             var constructorInfo = constructorInfos[0];
 
@@ -271,18 +230,7 @@ namespace MementoFX.Persistence.SQLite.Helpers
                 throw new ArgumentOutOfRangeException(nameof(constructorInfos));
             }
 
-            if (args != null && args.Length > 0)
-            {
-                for (var i = 0; i < args.Length; i++)
-                {
-                    if (args[i] is string || args[i] is Guid)
-                    {
-                        args[i] = $"'{args[i]}'";
-                    }
-                }
-
-                query = string.Format(query, args);
-            }
+            query = FormatQuery(query, args);
 
             var constructorInfo = constructorInfos[0];
 
@@ -328,6 +276,29 @@ namespace MementoFX.Persistence.SQLite.Helpers
             }
 
             return collection;
+        }
+
+        private static string FormatQuery(string query, params object[] args)
+        {
+            if (args != null && args.Length > 0)
+            {
+                for (var i = 0; i < args.Length; i++)
+                {
+                    if (args[i] is string || args[i] is Guid || args[i] is DateTime || args[i] is DateTimeOffset || args[i] is TimeSpan)
+                    {
+                        args[i] = $"'{args[i]}'";
+                    }
+                }
+
+                query = string.Format(query, args);
+            }
+
+            return query;
+        }
+
+        private static string[] GetBaseDomainEventProperties()
+        {
+            return new[] { nameof(DomainEvent.Id), nameof(DomainEvent.TimelineId), nameof(DomainEvent.TimeStamp) };
         }
 
         private static IDictionary<string, object> GetDataDictionary(SQLitePCL.sqlite3_stmt stmt, PropertyInfo[] properties, bool storeDateTimeAsTicks)
@@ -451,5 +422,47 @@ namespace MementoFX.Persistence.SQLite.Helpers
 
             return dictionary;
         }
+
+        public static string GetFixedLeftPart(string text)
+        {
+            if (!text.Contains('.'))
+            {
+                return text;
+            }
+            
+            var splittedAggregateIdPropertyName = text.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+
+            var jsonExpression = splittedAggregateIdPropertyName[0];
+            
+            var jsonPath = "$." + string.Join(".", splittedAggregateIdPropertyName.Skip(1));
+
+            return string.Format(Commands.JsonExtractFormat, jsonExpression, jsonPath);
+        }
+
+        public static IList<Tuple<string, Type>> GetTableSchema(this SQLiteConnection connection, string tableName)
+        {
+            if (connection == null)
+            {
+                throw new ArgumentNullException(nameof(connection));
+            }
+
+            var query = string.Format(Commands.SelectTableExistsFormat, tableName);
+
+            var columnsData = connection.Query<DbColumn>(query);
+
+            if (columnsData == null || columnsData.Count == 0) return new List<Tuple<string, Type>>();
+
+            return columnsData.Select(MapColumnType).ToList();
+        }
+
+        private static Tuple<string, Type> MapColumnType(DbColumn column)
+        {
+            var isNullable = Convert.ToBoolean(column.NotNull);
+
+            var columnType = TypeHelper.GetClrType(column.Type, isNullable);
+
+            return Tuple.Create(column.Name, columnType);
+        }
+
     }
 }

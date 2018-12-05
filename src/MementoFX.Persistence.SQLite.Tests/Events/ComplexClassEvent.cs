@@ -16,11 +16,14 @@ namespace MementoFX.Persistence.SQLite.Tests.Events
 
         public class SecondClass
         {
-            public SecondClass(string[] strings)
+            public SecondClass(string[] strings, TimeSpan time)
             {
                 this.Strings = strings;
+                this.Time = time;
             }
-            
+
+            public TimeSpan Time { get; set; }
+
             public string[] Strings { get; private set; }
         }
     }

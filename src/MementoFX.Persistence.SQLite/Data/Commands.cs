@@ -9,6 +9,7 @@ namespace MementoFX.Persistence.SQLite.Data
         public const string CreateIndexNameFormat = "IX_{0}_{1}";
         public const string CreateTableFormat = "CREATE TABLE {0}";
         private const string InsertIntoFormat = "INSERT INTO {0} ({1}) VALUES ({2})";
+        public const string JsonExtractFormat = "json_extract({0},'{1}')";
         public const string ParameterNameFormat = "{{0}}";
         public const string SelectTableExistsFormat = "PRAGMA table_info({0})";
         public const string SelectTopFormat = "SELECT TOP({0}) {1} FROM {2}";

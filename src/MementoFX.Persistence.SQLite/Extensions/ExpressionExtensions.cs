@@ -1,6 +1,7 @@
 ﻿///source http://ryanohs.com/2016/04/generating-sql-from-expression-trees-part-2/
 
 using MementoFX.Persistence.SQLite.Data;
+using MementoFX.Persistence.SQLite.Helpers;
 using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -73,7 +74,9 @@ namespace System.Linq.Expressions
                     {
                         name = string.Join(".", name.Split('.').Skip(1));
                     }
-                    
+
+                    name = TableHelper.GetFixedLeftPart(name);
+
                     return SqlExpression.TextOnly(name);
                 }
 
