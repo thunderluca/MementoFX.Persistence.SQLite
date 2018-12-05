@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace MementoFX.Persistence.Sqlite
+namespace MementoFX.Persistence.SQLite
 {
     public class SQLiteEventStoreFixture
     {

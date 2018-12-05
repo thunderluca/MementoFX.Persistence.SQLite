@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace MementoFX.Persistence.Sqlite
+namespace MementoFX.Persistence.SQLite
 {
     /// <summary>
     /// Provides an implementation of a Memento event store
