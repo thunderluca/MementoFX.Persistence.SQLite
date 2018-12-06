@@ -18,7 +18,7 @@ namespace MementoFX.Persistence.SQLite
         /// <summary>
         /// Gets or sets the reference to the SQLite database instance
         /// </summary>
-        public static SQLiteConnection SQLiteDatabase { get; private set; }
+        private readonly SQLiteConnection SQLiteDatabase;
 
         /// <summary>
         /// Creates a new instance of the event store
