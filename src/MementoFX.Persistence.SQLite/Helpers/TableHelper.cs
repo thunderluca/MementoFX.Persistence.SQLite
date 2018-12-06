@@ -223,16 +223,14 @@ namespace MementoFX.Persistence.SQLite.Helpers
 
             var type = typeof(T);
 
-            var constructorInfos = type.GetConstructors();
-            if (constructorInfos == null || constructorInfos.Length == 0)
+            var constructorInfo = type.GetConstructors().FirstOrDefault(p => p.IsPublic);
+            if (constructorInfo == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(constructorInfos));
+                throw new ArgumentNullException(nameof(constructorInfo));
             }
 
             query = FormatQuery(query, args);
-
-            var constructorInfo = constructorInfos[0];
-
+            
             var properties = type.GetProperties();
 
             var parameters = constructorInfo.GetParameters();
