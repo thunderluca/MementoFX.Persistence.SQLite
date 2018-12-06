@@ -15,9 +15,6 @@ namespace MementoFX.Persistence.SQLite
     /// </summary>
     public class SQLiteEventStore : EventStore
     {
-        /// <summary>
-        /// Gets or sets the reference to the SQLite database instance
-        /// </summary>
         private readonly SQLiteConnection SQLiteDatabase;
 
         /// <summary>
