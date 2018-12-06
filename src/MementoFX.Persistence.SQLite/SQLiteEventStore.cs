@@ -27,7 +27,6 @@ namespace MementoFX.Persistence.SQLite
             if (SQLiteDatabase == null)
             {
                 SQLiteDatabase = new SQLiteConnection(connectionString);
-                SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
             }
         }
 
@@ -39,7 +38,6 @@ namespace MementoFX.Persistence.SQLite
         public SQLiteEventStore(SQLiteConnection sqliteDatabase, IEventDispatcher eventDispatcher) : base(eventDispatcher)
         {
             SQLiteDatabase = sqliteDatabase ?? throw new ArgumentNullException(nameof(sqliteDatabase));
-            SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
         }
 
         /// <summary>

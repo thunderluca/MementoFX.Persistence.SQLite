@@ -12,7 +12,6 @@
     <PackageReference Include="MementoFX" Version="2.0.0-pre6" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="sqlite-net-pcl" Version="1.5.231" />
-    <PackageReference Include="SQLitePCLRaw.provider.e_sqlite3.netstandard11" Version="1.1.11" />
   </ItemGroup>
 
 </Project>
