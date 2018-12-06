@@ -2,7 +2,6 @@
 using SQLite;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
@@ -320,95 +319,33 @@ namespace MementoFX.Persistence.SQLite.Helpers
                         {
                             var @string = SQLite3.ColumnText(stmt, index);
 
-                            if (@string == null)
-                            {
-                                dictionary.Add(colName, null);
-                                break;
-                            }
+                            var value = TypeHelper.TryConvertStringValue(@string, property, storeDateTimeAsTicks);
 
-                            if (string.IsNullOrWhiteSpace(@string))
-                            {
-                                dictionary.Add(colName, @string);
-                                break;
-                            }
-
-                            if (!storeDateTimeAsTicks && DateTime.TryParse(@string, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTime dateTime))
-                            {
-                                dictionary.Add(colName, dateTime);
-                                break;
-                            }
-
-                            if (!storeDateTimeAsTicks && DateTimeOffset.TryParse(@string, out DateTimeOffset dateTimeOffset))
-                            {
-                                dictionary.Add(colName, dateTimeOffset);
-                                break;
-                            }
-
-                            if (property.PropertyType == typeof(Guid) || property.PropertyType == typeof(Guid?))
-                            {
-                                if (Guid.TryParse(@string, out Guid guid))
-                                {
-                                    dictionary.Add(colName, guid);
-                                    break;
-                                }
-
-                                dictionary.Add(colName, null);
-                                break;
-                            }
-
-                            if (JsonHelper.TryDeserializeObject(@string, property.PropertyType, out object obj))
-                            {
-                                dictionary.Add(colName, obj);
-                                break;
-                            }
-
-                            if (property.PropertyType == typeof(TimeSpan) && TimeSpan.TryParse(@string, out TimeSpan timeSpan))
-                            {
-                                dictionary.Add(colName, timeSpan);
-                                break;
-                            }
-
-                            dictionary.Add(colName, @string);
+                            dictionary.Add(colName, value);
                             break;
                         }
                     case SQLite3.ColType.Integer:
                         {
-                            object integer = SQLite3.ColumnInt64(stmt, index);
+                            var integer = SQLite3.ColumnInt64(stmt, index);
 
-                            if (integer.GetType() != property.PropertyType)
-                            {
-                                if (storeDateTimeAsTicks && (property.PropertyType == typeof(DateTime)
-                                    || property.PropertyType == typeof(DateTime?)
-                                    || property.PropertyType == typeof(DateTimeOffset)
-                                    || property.PropertyType == typeof(DateTimeOffset?)))
-                                {
-                                    var @long = (long)integer;
-                                    integer = DateTime.FromBinary(@long);
-                                }
-                                else
-                                {
-                                    integer = Convert.ChangeType(integer, property.PropertyType);
-                                }
-                            }
+                            var value = TypeHelper.TryConvertIntegerValue(integer, property, storeDateTimeAsTicks);
 
-                            dictionary.Add(colName, integer);
+                            dictionary.Add(colName, value);
                             break;
                         }
                     case SQLite3.ColType.Float:
                         {
-                            object @float = SQLite3.ColumnDouble(stmt, index);
+                            var @float = SQLite3.ColumnDouble(stmt, index);
 
-                            if (@float.GetType() != property.PropertyType)
-                            {
-                                @float = Convert.ChangeType(@float, property.PropertyType);
-                            }
-
-                            dictionary.Add(colName, @float);
+                            var value = TypeHelper.TryConvertFloatValue(@float, property);
+                            
+                            dictionary.Add(colName, value);
                             break;
                         }
                     case SQLite3.ColType.Blob:
                         {
                             var blob = SQLite3.ColumnBlob(stmt, index);
+
                             dictionary.Add(colName, blob);
                             break;
                         }
@@ -463,6 +400,5 @@ namespace MementoFX.Persistence.SQLite.Helpers
 
             return Tuple.Create(column.Name, columnType);
         }
-
     }
 }
