@@ -147,5 +147,16 @@ namespace MementoFX.Persistence.SQLite
 
             Assert.NotEmpty(events);
         }
+
+        [Fact]
+        public void Find_Allow_Filter_By_Complex_Property_2()
+        {
+            var @event = new ComplexClassEvent(Guid.NewGuid(), new ComplexClassEvent.SecondClass(new string[0], DateTime.UtcNow.TimeOfDay));
+            EventStore.Save(@event);
+
+            var events = EventStore.Find<ComplexClassEvent>(e => e.Second.Time == @event.Second.Time).ToArray();
+
+            Assert.Single(events);
+        }
     }
 }
